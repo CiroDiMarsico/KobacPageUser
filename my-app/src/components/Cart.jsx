@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "./Button";
 
 const Cart = ({ carrito = [], data }) => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Calcula el total sumando precio * cantidades de cada producto
   const total = carrito.reduce((acc, item) => {
@@ -62,7 +64,7 @@ const Cart = ({ carrito = [], data }) => {
           className={`font-['koulen'] text-[28px] leading-none absolute transition-all duration-300
       ${open ? "opacity-100 scale-100" : "opacity-0 scale-50"}`}
         >
-          &lt;
+          &gt;
         </span>
       </button>
 
@@ -139,7 +141,7 @@ const Cart = ({ carrito = [], data }) => {
             </span>
           </div>
           <p className="text-white/90 text-[14px] text-right font-['prompt'] mb-4">+ ENVIO</p>
-          <Button text="COMPRAR" width="100%" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" />
+          <Button text="CONFIRMAR" width="100%" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" disabled={carrito.length === 0} click={() => navigate("/location", { state: { carrito } })}/>
         </div>
       </aside>
     </div>

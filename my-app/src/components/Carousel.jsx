@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 const slides = [
   { img: "./src/assets/comboDelFinde.jpeg" },
-  { img: "./src/assets/comboDelFinde.jpeg" },
+  { img: "./src/assets/logokobac.png" },
+  { img: "./src/assets/favicon.png" },
 ];
 
 export default function Carousel() {
   const [current, setCurrent] = useState(0);
   const timerRef = useRef(null);
 
+  //solo
   const resetTimer = useCallback(() => {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -16,6 +18,7 @@ export default function Carousel() {
     }, 5000);
   }, []);
 
+  //flechas
   const next = useCallback(() => {
     setCurrent(c => (c + 1) % slides.length);
     resetTimer();
@@ -31,8 +34,27 @@ export default function Carousel() {
     return () => clearInterval(timerRef.current);
   }, [resetTimer]);
 
+  //mover con el dedo
+  const touchStartX = useRef(null);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+
+    if (diff > 50) next();       // swipe izquierda → siguiente
+    if (diff < -50) prev();      // swipe derecha → anterior
+
+    touchStartX.current = null;
+  };
   return (
-    <div className="relative w-full h-[450px] overflow-hidden">
+    <div className="relative w-full h-[450px] overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
 
       {/* Slides */}
       {slides.map((s, i) => (
@@ -45,7 +67,7 @@ export default function Carousel() {
           <img
             src={s.img}
             alt="img"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
       ))}

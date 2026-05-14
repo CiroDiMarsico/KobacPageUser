@@ -6,11 +6,13 @@ const Button = ({
   textColor = "#C32CFF",
   textSize = "20px",
   click = () => {},
+  disabled = false
 }) => {
   return (
     <button 
-      className={`rounded-3xl font-['Prompt'] font-bold text-[${textSize}]`} 
+      className={`rounded-3xl font-['Prompt'] font-bold text-[${textSize}] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`} 
       onClick={click}
+      disabled={disabled}
       style={{
         backgroundColor: color,
         width: width,

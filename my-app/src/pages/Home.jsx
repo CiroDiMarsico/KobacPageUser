@@ -14,7 +14,7 @@ const Home = () => {
       id: 1,
       img: "./src/assets/skyy.png",
       name: "SKYY",
-      salePrice: 10500,
+      salePrice: 11000,
       category: "Bebidas blancas",
       variants: [
         { id: 1, name: "frutos rojos", isActive: true, stock: 4 },
@@ -31,8 +31,25 @@ const Home = () => {
       variants: [
         { id: 4, name: "coca cola 2.25L", isActive: true, stock: 5 }
       ]
+    },
+    {
+      id: 3,
+      img: "./src/assets/botella.png",
+      name: "SMIRNOFF",
+      salePrice: 9800,
+      category: "Bebidas blancas",
+      variants: [
+        { id: 5, name: "frutos rojos", isActive: true, stock: 2 },
+        { id: 6, name: "tropical fruits", isActive: true, stock: 1 }
+      ]
     }
   ]
+
+  const [search, setSearch] = useState("");
+
+  const dataFiltrada = data.filter(p =>
+    p.name.toLowerCase().includes(search)
+  );
 
   const [show, setShow] = useState("promos");
 
@@ -122,7 +139,7 @@ const Home = () => {
       {/*search*/}
       <div className="flex justify-center items-center">
         <div className=" flex justify-center items-centerbackdrop-blur-md shadow-[0_0_40px_rgba(168,85,247,0.35)] rounded-full">
-          <input type="text" className="bg-[#4E486E] w-[330px] h-[50px] rounded-l-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0" />
+          <input type="text" className="bg-[#4E486E] w-[330px] h-[50px] rounded-l-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0" onChange={e => setSearch(e.target.value.toLowerCase())} />
           <button className="bg-[#4E486E] h-[50px] w-[50px] rounded-r-full flex items-center p-1">
             <img src="./src/assets/lupa.png" alt="lupa" className="h-[40px]" />
           </button>
@@ -133,7 +150,7 @@ const Home = () => {
       <div className="my-[40px] min-h-[60vh]">
         <div key={show} className="animate-slide">
           {show === "promos" && <Promos />}
-          {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={data} />}
+          {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={dataFiltrada} />}
           {show === "vapes" && <Vapes />}
         </div>
       </div>
