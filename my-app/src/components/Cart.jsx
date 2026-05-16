@@ -141,7 +141,7 @@ const Cart = ({ carrito = [], data }) => {
             </span>
           </div>
           <p className="text-white/90 text-[14px] text-right font-['prompt'] mb-4">+ ENVIO</p>
-          <Button text="CONFIRMAR" width="100%" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" disabled={carrito.length === 0} click={() => navigate("/location", { state: { carrito } })}/>
+          <Button text="CONFIRMAR" width="100%" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" disabled={carrito.length === 0} click={() => navigate("/location", { state: { carrito, data } })}/>
         </div>
       </aside>
     </div>

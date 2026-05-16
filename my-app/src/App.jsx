@@ -4,7 +4,8 @@ import Home from "./pages/Home"
 import Navbar from "./components/Navbar"
 import { useState, useEffect } from "react"
 import Loading from "./components/Loading";
-import Location from "./components/Location";
+import Location from "./pages/Location";
+import Confirm from "./pages/Confirm";
 function App() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -19,6 +20,7 @@ function App() {
       <Routes>
         <Route path="/" element={loading ? <Loading /> : <Home />} />
         <Route path="/location" element={<Location />} />
+        <Route path="/confirm" element={<Confirm />} />
       </Routes>
     </>
   )
