@@ -1,20 +1,45 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Popover from "./Popover";
+import PopoverPromo from "./PopoverPromo";
 import Button from "./Button";
 
-const Cart = ({ carrito = [], data }) => {
+const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoAlCarrito, getStockDisponible }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
   // Calcula el total sumando precio * cantidades de cada producto
   const total = carrito.reduce((acc, item) => {
+    if (item.isPromo) return acc + item.precio * item.cantidad;
+    if (!item.variants) return acc;
     const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
     return acc + item.precio * cantTotal;
   }, 0);
 
-  const totalVariantes = carrito.reduce((acc, item) => 
-  acc + Object.values(item.variants).reduce((a, b) => a + b, 0), 0
-);
+  const totalVariantes = carrito.reduce((acc, item) => {
+    if (item.isPromo) return acc + item.cantidad;
+    if (!item.variants) return acc;
+    return acc + Object.values(item.variants).reduce((a, b) => a + b, 0);
+  }, 0);
+
+  {/*popover*/ }
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  const [editQuantities, setEditQuantities] = useState({});
+  const abrirEditarProducto = (productoData) => {
+    const itemEnCarrito = carrito.find(i => i.idProduct === productoData.id);
+    setEditQuantities(itemEnCarrito?.variants ?? Object.fromEntries(
+      productoData.variants.filter(v => v.isActive && v.stock > 0).map(v => [String(v.id), 0])
+    ));
+    setProductoSeleccionado(productoData);
+  };
+
+
+  const [promoDataEditando, setPromoDataEditando] = useState(null);
+
+  const abrirEditarPromo = (item) => {
+    const promo = promos.find(p => p.id === item.idPromo);
+    setPromoDataEditando({ promo, initialQuantities: { cantidad: item.cantidad, selecciones: item.selecciones }, key: item.key });
+  };
 
   return (
     <div>
@@ -70,80 +95,135 @@ const Cart = ({ carrito = [], data }) => {
 
       {/* Overlay */}
       {open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setOpen(false)} />
       )}
 
       {/* Panel lateral */}
-      <aside
-        className={`fixed top-0 right-0 h-[100%] w-[75%] bg-[#11111F] z-50 flex flex-col
+      <aside className={`fixed top-0 right-0 h-[100%] w-[75%] bg-[#11111F] z-50 flex flex-col
           transition-transform duration-300 ease-in-out
-          ${open ? "translate-x-0" : "translate-x-full"}`}
-      >
-        {/* Título */}
-        <h1 className="font-['prompt'] text-[42px] text-center pt-6 pb-2 font-semibold">
-          CARRITO
-        </h1>
+          ${open ? "translate-x-0" : "translate-x-full"}`}>
 
-        {/* Lista de productos */}
+        <h1 className="font-['prompt'] text-[42px] text-center pt-6 pb-2 font-semibold">CARRITO</h1>
+
         <div className="flex-1 overflow-y-auto px-6 flex flex-col gap-5 py-4">
-
           {carrito
-            .filter(item => Object.values(item.variants).some(cant => cant > 0))
+            .filter(item => !item.isPromo && item.variants && Object.values(item.variants).some(cant => cant > 0))
             .map(item => {
               const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
+              const productoData = data.find(p => p.id === item.idProduct);
               return (
-                <div key={item.idProduct}>
-                  {/* Nombre y precio total del producto */}
+                <div
+                  key={item.idProduct}
+                  onClick={() => abrirEditarProducto(productoData)}
+                  className="cursor-pointer active:opacity-70 transition-opacity"
+                >
                   <div className="flex justify-between items-center mb-1">
                     <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
                     <span className="font-['koulen'] text-[20px] text-[#00FF1E]">
                       ${(item.precio * cantTotal).toLocaleString("es-AR")}
                     </span>
                   </div>
-
-                  {/* Variantes */}
                   <div className="flex flex-col gap-1 pl-1">
                     {Object.entries(item.variants)
                       .filter(([_, cant]) => cant > 0)
                       .map(([idVariant, cant]) => (
                         <div key={idVariant} className="flex items-center gap-2">
                           <span className="font-['koulen'] text-[14px] text-white/80 uppercase tracking-wider">
-                            {/* Buscás el nombre de la variante si lo tenés, sino mostrás el id */}
-                            {data
-                              .find(p => p.id === item.idProduct)
-                              ?.variants
-                              .find(v => String(v.id) === idVariant)
-                              ?.name
-                            }
+                            {productoData?.variants.find(v => String(v.id) === idVariant)?.name}
                           </span>
                           <div className="flex-1 border-b border-white/20" />
                           <span className="font-['koulen'] text-[16px]">{cant}</span>
                         </div>
                       ))}
                   </div>
-
                   <div className="border-b border-white/10 mt-3" />
                 </div>
               );
             })}
+          {/* Promos */}
+          {carrito.filter(item => item.isPromo).map(item => {
+            const promo = promos.find(p => p.id === item.idPromo);
+            return (
+              <div
+                key={item.key}
+                onClick={() => abrirEditarPromo(item)}
+                className="cursor-pointer active:opacity-70 transition-opacity"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
+                  <span className="font-['koulen'] text-[20px] text-[#00FF1E]">
+                    ${(item.precio * item.cantidad).toLocaleString("es-AR")}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1 pl-1">
+                  {promo?.items.map(promoItem => {
+                    const producto = data.find(p => p.id === promoItem.idProduct);
+                    return Object.entries(item.selecciones[promoItem.idProduct] ?? {})
+                      .filter(([_, cant]) => cant > 0)
+                      .map(([variantId, cant]) => {
+                        const variante = producto?.variants.find(v => String(v.id) === variantId);
+                        return (
+                          <div key={variantId} className="flex items-center gap-2">
+                            <span className="font-['koulen'] text-[14px] text-white/80 uppercase tracking-wider">
+                              {producto?.name}
+                            </span>
+                            <div className="flex-1 border-b border-white/20" />
+                            <span className="font-['koulen'] text-[16px]">{variante?.name} x{cant}</span>
+                          </div>
+                        );
+                      });
+                  })}
+                </div>
+                <div className="border-b border-white/10 mt-3" />
+              </div>
+            );
+          })}
         </div>
 
-        {/* Footer */}
         <div className="px-6 pb-8 pt-4 border-t border-white/10">
           <div className="border-t border-white/20 mb-4" />
           <div className="flex justify-between items-center">
             <span className="font-['koulen'] text-[26px] tracking-widest">TOTAL:</span>
-            <span className="font-['koulen'] text-[26px] text-[#00FF1E]">
-              ${total.toLocaleString("es-AR")}
-            </span>
+            <span className="font-['koulen'] text-[26px] text-[#00FF1E]">${total.toLocaleString("es-AR")}</span>
           </div>
           <p className="text-white/90 text-[14px] text-right font-['prompt'] mb-4">+ ENVIO</p>
-          <Button text="CONFIRMAR" width="100%" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" disabled={carrito.length === 0} click={() => navigate("/location", { state: { carrito, data } })}/>
+          <Button text="CONFIRMAR" width="100%" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px"
+            disabled={carrito.length === 0}
+            click={() => navigate("/location", { state: { carrito, data, promos } })}
+          />
         </div>
       </aside>
+
+      {/* Popover para editar — igual que en Product */}
+      {productoSeleccionado && (
+        <Popover
+          product={productoSeleccionado}
+          quantities={editQuantities}
+          setQuantities={setEditQuantities}
+          onClose={() => setProductoSeleccionado(null)}
+          onAgregar={(q) => {
+            agregarAlCarrito(productoSeleccionado, q);
+            setProductoSeleccionado(null);
+          }}
+          getStockDisponible={(variantId) => getStockDisponible(variantId, null, productoSeleccionado.id)}
+        />
+      )}
+
+      {/* Popover edición promo */}
+      {promoDataEditando && (
+        <PopoverPromo
+          promo={promoDataEditando.promo}
+          data={data}
+          onClose={() => setPromoDataEditando(null)}
+          initialQuantities={promoDataEditando.initialQuantities}
+          onAgregar={(seleccion) => {
+            agregarPromoAlCarrito(promoDataEditando.promo, seleccion, promoDataEditando.key);
+            setPromoDataEditando(null);
+          }}
+          getStockDisponible={(variantId) => getStockDisponible(variantId, promoDataEditando.key)}
+        />
+      )}
     </div>
   );
 };

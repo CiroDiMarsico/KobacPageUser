@@ -9,14 +9,18 @@ const Confirm = () => {
   const { state } = useLocation();
   const carrito = state?.carrito ?? JSON.parse(localStorage.getItem("carrito") ?? "[]");
   const ubicacion = state?.ubicacion ?? JSON.parse(localStorage.getItem("ubicacion") ?? "[]");
+  const informacion = state?.informacion ?? JSON.parse(localStorage.getItem("informacion") ?? "[]");
+  const promosData = state?.promos ?? [];
   const data = state?.data;
   useEffect(() => {
-    if (!state?.carrito && !state?.ubicacion) {
+    if (!state?.carrito && !state?.ubicacion && !state?.informacion) {
       navigate("/");
     }
   }, []);
 
   const total = carrito.reduce((acc, item) => {
+    if (item.isPromo) return acc + item.precio * item.cantidad;
+    if (!item.variants) return acc;
     const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
     return acc + item.precio * cantTotal;
   }, 0);
@@ -25,32 +29,51 @@ const Confirm = () => {
 
   {/*msg*/ }
   const handleConfirmar = () => {
-    const itemsTexto = carrito.map(item => {
-      const producto = data.find(p => p.id === item.idProduct);
+    const itemsTexto = carrito
+      .filter(item => !item.isPromo && item.variants)  // 👈
+      .map(item => {
+        const producto = data.find(p => p.id === item.idProduct);
 
-      const variantes = Object.entries(item.variants)
-        .filter(([_, cant]) => cant > 0)
-        .map(([idVariant, cant]) => {
-          const variante = producto?.variants.find(v => String(v.id) === String(idVariant));
-          return `  •(${cant}) ${variante?.name ?? idVariant}`;
-        })
-        .join('\n');
+        const variantes = Object.entries(item.variants)
+          .filter(([_, cant]) => cant > 0)
+          .map(([idVariant, cant]) => {
+            const variante = producto?.variants.find(v => String(v.id) === String(idVariant));
+            return `  •(${cant}) ${variante?.name ?? idVariant}`;
+          })
+          .join('\n');
 
-      const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
-      return `*${item.nombre}* - $${(item.precio * cantTotal).toLocaleString('es-AR')}\n${variantes}`;
-    }).join('\n\n');
+        const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
+        return `*${item.nombre}* - $${(item.precio * cantTotal).toLocaleString('es-AR')}\n${variantes}`;
+      }).join('\n\n');
+
+    const promosTexto = carrito
+      .filter(item => item.isPromo)
+      .map(item => {
+        const promo = promosData.find(p => p.id === item.idPromo);
+        const detalle = promo?.items.map(promoItem => {
+          const producto = data.find(p => p.id === promoItem.idProduct);
+          return Object.entries(item.selecciones[promoItem.idProduct] ?? {})
+            .filter(([_, cant]) => cant > 0)
+            .map(([variantId, cant]) => {
+              const variante = producto?.variants.find(v => String(v.id) === variantId);
+              return `  •(${cant}) ${producto?.name} → ${variante?.name}`;
+            }).join('\n');
+        }).join('\n');
+        return `*${item.nombre}* x${item.cantidad} - $${(item.precio * item.cantidad).toLocaleString('es-AR')}\n${detalle}`;
+      }).join('\n\n');
 
     const mensaje = `
-🛵 *NUEVO PEDIDO*
+🛵 *PEDIDO #00000*
 
-📍 *Dirección:* ${ubicacion.calle} ${ubicacion.numero}
-📍 *Barrio:* ${ubicacion.barrio}
-${ubicacion.descripcion ? `📝 *Referencia:* ${ubicacion.descripcion}` : ''}
+👤 *Nombre:* ${informacion.nombre.toLowerCase()}
+📲 *Teléfono:* ${informacion.telefono}
+📍 *Dirección:* ${ubicacion.calle.toUpperCase()} ${ubicacion.numero}
+📍 *Barrio:* ${ubicacion.barrio.toUpperCase()}
+${ubicacion.descripcion ? `📝 *Referencia:* ${ubicacion.descripcion.toLowerCase()}` : ''}
 
 🛒 *PEDIDO:*
-
-${itemsTexto}
-
+${itemsTexto ? `\n${itemsTexto}\n` : ''}
+${promosTexto ? `🎁 *PROMOS:*\n${promosTexto}\n` : ''}
 💰 *TOTAL:* $${total.toLocaleString('es-AR')} + envío
 💳 *Pago:* ${show.toUpperCase()}
   `.trim();
@@ -69,7 +92,7 @@ ${itemsTexto}
           <Button text="SEGUIR COMPRANDO" width="300px" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => navigate("/")}
           />
         </div>
-        <div className="flex gap-2 items-center px-8 mt-6">
+        <div className="flex gap-2 items-center px-8 mt-6" onClick={() => navigate("/location", { state: { carrito, data } })}>
           <img src="./src/assets/ubi.png" alt="" className="h-[35px]" />
           <h1 className="text-2xl font-['koulen']">{ubicacion.calle} {ubicacion.numero} - {ubicacion.barrio}</h1>
         </div>

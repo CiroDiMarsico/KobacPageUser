@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html, body {
+  overscroll-behavior-x: none;
+}
+
 @keyframes marquee {
   0%   { transform: translateX(25%); }
   100% { transform: translateX(-25%); }
@@ -53,4 +57,14 @@
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/*line*/
+@keyframes shimmer {
+  0%   { left: -30%; }
+  100% { left: 100%; }
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s ease-in-out infinite;
 }

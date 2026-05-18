@@ -15,16 +15,22 @@ const Location = () => {
   }, []);
 
   const savedLocation = JSON.parse(localStorage.getItem("ubicacion") ?? "null");
+  const savedInfo = JSON.parse(localStorage.getItem("informacion") ?? "null");
 
   const [calle, setCalle] = useState(savedLocation?.calle ?? "");
   const [numero, setNumero] = useState(savedLocation?.numero ?? "");
   const [barrio, setBarrio] = useState(savedLocation?.barrio ?? "");
   const [descripcion, setDescripcion] = useState(savedLocation?.descripcion ?? "");
 
+  const [nombre, setNombre] = useState(savedInfo?.nombre ?? "");
+  const [telefono, setTelefono] = useState(savedInfo?.telefono ?? "");
+
   const handleContinuar = () => {
     const ubicacion = { calle, numero, barrio, descripcion };
+    const informacion = { nombre, telefono };
     localStorage.setItem("ubicacion", JSON.stringify(ubicacion));
-    navigate("/confirm", { state: { carrito, ubicacion, data } });
+    localStorage.setItem("informacion", JSON.stringify(informacion));
+    navigate("/confirm", { state: { carrito, ubicacion, data, informacion, promos: state?.promos } });
   };
 
   return (
@@ -34,7 +40,29 @@ const Location = () => {
           <Button text="SEGUIR COMPRANDO" width="300px" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => navigate("/")}
           />
         </div>
-        <div className="flex gap-3 items-center justify-center px-5 mt-10">
+
+        <div className="relative flex gap-3 items-center justify-center px-5 mt-10">
+          <input
+            type="text"
+            placeholder="NOMBRE COMPLETO"
+            value={nombre}
+            onChange={e => { setNombre(e.target.value) }}
+            className={`bg-[#4E486E] w-[100%] h-[50px] rounded-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0`}
+          />
+        </div>
+        <div className="flex gap-3 items-center justify-center px-5 mt-4">
+          <input
+            type="text"
+            placeholder="TELEFONO"
+            value={telefono}
+            onChange={e => { setTelefono(e.target.value) }}
+            className={`bg-[#4E486E] w-[100%] h-[50px] rounded-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0`}
+          />
+        </div>
+
+        <hr className="w-[90%] mx-auto mt-6" />
+
+        <div className="flex gap-3 items-center justify-center px-5 mt-4">
           <input
             type="text"
             placeholder="CALLE"
@@ -61,24 +89,25 @@ const Location = () => {
         </div>
         <div className="flex gap-3 items-center justify-center px-5 mt-4">
           <textarea
-              placeholder="DESCRIPCION (opcional)"
-              value={descripcion}
-              onChange={e => setDescripcion(e.target.value)}
-              className={`bg-[#4E486E] w-[100%] rounded-3xl font-[koulen] text-[20px] px-[20px] py-[10px] outline-none focus:outline-none focus:ring-0 h-[120px] resize-none`}
-            />
+            placeholder="DESCRIPCION (opcional)"
+            value={descripcion}
+            onChange={e => setDescripcion(e.target.value)}
+            className={`bg-[#4E486E] w-[100%] rounded-3xl font-[koulen] text-[20px] px-[20px] py-[10px] outline-none focus:outline-none focus:ring-0 h-[120px] resize-none`}
+          />
         </div>
+
       </div>
       <div className="flex items-center justify-center mt-10">
         <Button
-            text="CONTINUAR"
-            width="250px"
-            height="44px"
-            color="#C32CFF"
-            textColor="#FFFFFF"
-            textSize="20px"
-            disabled={!calle || !numero || !barrio}
-            click={handleContinuar}
-          />
+          text="CONTINUAR"
+          width="250px"
+          height="44px"
+          color="#C32CFF"
+          textColor="#FFFFFF"
+          textSize="20px"
+          disabled={!calle || !numero || !barrio || !telefono || !nombre}
+          click={handleContinuar}
+        />
       </div>
     </main >
   );

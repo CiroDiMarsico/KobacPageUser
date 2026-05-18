@@ -25,7 +25,7 @@ const Home = () => {
     {
       id: 2,
       img: "./src/assets/botella.png",
-      name: "COCA COLA",
+      name: "COCA COLA 2.25L",
       salePrice: 5000,
       category: "Gaseosas",
       variants: [
@@ -40,7 +40,29 @@ const Home = () => {
       category: "Bebidas blancas",
       variants: [
         { id: 5, name: "frutos rojos", isActive: true, stock: 2 },
-        { id: 6, name: "tropical fruits", isActive: true, stock: 1 }
+        { id: 6, name: "tropical fruits", isActive: true, stock: 3 },
+      ]
+    }
+  ]
+  const promos = [
+    {
+      id: 1,
+      name: "COMBO DEL FINDE",
+      img: "./src/assets/comboDelFinde.jpeg",
+      price: 25000,
+      items: [
+        { idProduct: 1, quantity: 1 },
+        { idProduct: 3, quantity: 2 },
+      ]
+    },
+    {
+      id: 2,
+      name: "COMBO DEL FINDE 2",
+      img: "./src/assets/comboDelFinde.jpeg",
+      price: 30000,
+      items: [
+        { idProduct: 3, quantity: 1 },
+        { idProduct: 2, quantity: 2 },
       ]
     }
   ]
@@ -104,6 +126,54 @@ const Home = () => {
     });
   };
 
+  const agregarPromoAlCarrito = (promo, { cantidad, selecciones }, keyExistente = null) => {
+    setCarrito(prev => {
+      const key = keyExistente ?? `promo_${promo.id}`;  // 👈 key fija por promo
+
+      if (cantidad === 0) {
+        return prev.filter(item => item.key !== key);
+      }
+
+      const existe = prev.find(item => item.key === key);
+      if (existe) {
+        return prev.map(item =>
+          item.key === key ? { ...item, cantidad, selecciones } : item
+        );
+      }
+
+      return [...prev, {
+        key, isPromo: true, idPromo: promo.id,
+        nombre: promo.name, precio: promo.price,
+        cantidad, selecciones
+      }];
+    });
+  };
+
+  const getStockDisponible = (variantId, excludeKey = null, excludeProductId = null) => {
+    const variantIdStr = String(variantId);
+
+    let stockOriginal = 0;
+    for (const producto of data) {
+      const variant = producto.variants.find(v => String(v.id) === variantIdStr);
+      if (variant) { stockOriginal = variant.stock; break; }
+    }
+
+    const enProductos = carrito
+      .filter(item => !item.isPromo && item.variants && item.idProduct !== excludeProductId) // 👈
+      .reduce((acc, item) => acc + (Number(item.variants[variantIdStr]) || 0), 0);
+
+    const enPromos = carrito
+      .filter(item => item.isPromo && item.key !== excludeKey)
+      .reduce((acc, item) => {
+        const totalEnEstaPromo = Object.values(item.selecciones).reduce((a, variantMap) => {
+          return a + (Number(variantMap[variantIdStr]) || 0);
+        }, 0);
+        return acc + totalEnEstaPromo; // 👈 sin * item.cantidad
+      }, 0);
+
+    return Math.max(0, stockOriginal - enProductos - enPromos);
+  };
+
   return (
     <main className="bg-[#11111F] min-h-screen text-white pt-[80px]">
 
@@ -147,15 +217,16 @@ const Home = () => {
       </div>
 
       {/*categories sections*/}
-      <div className="my-[40px] min-h-[60vh]">
+      <div className="mt-[40px] min-h-[60vh]">
         <div key={show} className="animate-slide">
-          {show === "promos" && <Promos />}
-          {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={dataFiltrada} />}
+          {show === "promos" && <Promos data={data} promos={promos} agregarPromoAlCarrito={agregarPromoAlCarrito} getStockDisponible={getStockDisponible} carrito={carrito} />}
+          {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={dataFiltrada} getStockDisponible={getStockDisponible} carrito={carrito} />}
           {show === "vapes" && <Vapes />}
         </div>
       </div>
 
-      <Cart carrito={carrito} data={data} />
+      <Cart carrito={carrito} data={data} promos={promos} agregarAlCarrito={agregarAlCarrito} agregarPromoAlCarrito={agregarPromoAlCarrito} getStockDisponible={getStockDisponible} />
+
     </main>
   );
 }

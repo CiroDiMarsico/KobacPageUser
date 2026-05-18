@@ -3,7 +3,9 @@ import Product from "../components/Product";
 const Bebidas = ({
   hidden = false,
   agregarAlCarrito,
-  data
+  data,
+  getStockDisponible,
+  carrito
 }) => {
 
   return (
@@ -12,13 +14,16 @@ const Bebidas = ({
         <div key={categoria}>
           <h2 className="font-['prompt'] text-[25px] font-bold text-[#fff] mb-4 text-center">
             {categoria.toUpperCase()}
-            <hr />
+            <div className="relative mt-1 overflow-hidden">
+              <hr className="border-white/30" />
+              <div className="absolute top-0 h-[1px] w-[30%] bg-gradient-to-r from-transparent via-[#C32CFF] to-transparent animate-shimmer" />
+            </div>
           </h2>
           <div className="grid grid-cols-2 gap-6 justify-items-center">
             {data
               .filter(p => p.category === categoria)
               .map(drink => (
-                <Product key={drink.id} product={drink} agregarAlCarrito={agregarAlCarrito} />
+                <Product key={drink.id} product={drink} agregarAlCarrito={agregarAlCarrito} getStockDisponible={getStockDisponible} carrito={carrito} />
               ))}
           </div>
         </div>
