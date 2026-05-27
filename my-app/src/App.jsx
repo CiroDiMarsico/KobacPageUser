@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import Loading from "./components/Loading";
 import Location from "./pages/Location";
 import Confirm from "./pages/Confirm";
+import NotFound from "./pages/NotFound";
 function App() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -21,6 +22,8 @@ function App() {
         <Route path="/" element={loading ? <Loading /> : <Home />} />
         <Route path="/location" element={<Location />} />
         <Route path="/confirm" element={<Confirm />} />
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   )

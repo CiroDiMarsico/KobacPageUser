@@ -33,7 +33,6 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
     setProductoSeleccionado(productoData);
   };
 
-
   const [promoDataEditando, setPromoDataEditando] = useState(null);
 
   const abrirEditarPromo = (item) => {
@@ -46,7 +45,7 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
       {/* Botón flotante */}
       <button
         onClick={() => setOpen(!open)}
-        className={`fixed bg-[#6F3784] rounded-full w-[65px] h-[65px] flex items-center justify-center bottom-10 z-50 shadow-lg transition-all duration-300 ${open ? "right-[70%]" : "right-5"}`}
+        className={`fixed bg-[#6F3784] rounded-full w-[65px] h-[65px] flex items-center justify-center bottom-10 z-50 shadow-lg transition-all duration-300 ${open ? "right-[290px] md:right-[380px]" : "right-5"}`}
       >
         {total > 0 && (
           <p className={`font-['koulen'] text-[19px] absolute bottom-[-20px] leading-none text-[#00FF1E] bg-[#6F3784] rounded-3xl p-1.5 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"} transition-all duration-300`}>${total.toLocaleString("es-AR")}</p>
@@ -99,7 +98,7 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
       )}
 
       {/* Panel lateral */}
-      <aside className={`fixed top-0 right-0 h-[100%] w-[75%] bg-[#11111F] z-50 flex flex-col
+      <aside className={`fixed top-0 right-0 h-[100%] w-[310px] md:w-[400px] bg-[#11111F] z-50 flex flex-col
           transition-transform duration-300 ease-in-out
           ${open ? "translate-x-0" : "translate-x-full"}`}>
 
@@ -195,7 +194,7 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
         </div>
       </aside>
 
-      {/* Popover para editar — igual que en Product */}
+      {/* Popover para editar */}
       {productoSeleccionado && (
         <Popover
           product={productoSeleccionado}

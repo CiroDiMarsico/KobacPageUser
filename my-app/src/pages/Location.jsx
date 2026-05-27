@@ -34,14 +34,14 @@ const Location = () => {
   };
 
   return (
-    <main className="bg-[#11111F] min-h-[100dvh] text-white pt-[110px] flex flex-col">
-      <div>
+    <main className="bg-[#11111F] min-h-[100dvh] text-white pt-[110px] flex flex-col items-center">
+      <div className="sm:w-[600px] flex justify-center flex-col items-center">
         <div className="flex items-center justify-center">
           <Button text="SEGUIR COMPRANDO" width="300px" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => navigate("/")}
           />
         </div>
 
-        <div className="relative flex gap-3 items-center justify-center px-5 mt-10">
+        <div className="relative flex gap-3 items-center justify-center px-5 mt-10 w-[100%]">
           <input
             type="text"
             placeholder="NOMBRE COMPLETO"
@@ -50,7 +50,7 @@ const Location = () => {
             className={`bg-[#4E486E] w-[100%] h-[50px] rounded-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0`}
           />
         </div>
-        <div className="flex gap-3 items-center justify-center px-5 mt-4">
+        <div className="flex gap-3 items-center justify-center px-5 mt-4 w-[100%]">
           <input
             type="text"
             placeholder="TELEFONO"
@@ -62,7 +62,7 @@ const Location = () => {
 
         <hr className="w-[90%] mx-auto mt-6" />
 
-        <div className="flex gap-3 items-center justify-center px-5 mt-4">
+        <div className="flex gap-3 items-center justify-center px-5 mt-4 w-[100%]">
           <input
             type="text"
             placeholder="CALLE"
@@ -78,7 +78,7 @@ const Location = () => {
             className={`bg-[#4E486E] w-[30%] h-[50px] rounded-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0`}
           />
         </div>
-        <div className="flex gap-3 items-center justify-center px-5 mt-4">
+        <div className="flex gap-3 items-center justify-center px-5 mt-4 w-[100%]">
           <input
             type="text"
             placeholder="BARRIO"
@@ -87,7 +87,7 @@ const Location = () => {
             className={`bg-[#4E486E] w-[100%] h-[50px] rounded-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0`}
           />
         </div>
-        <div className="flex gap-3 items-center justify-center px-5 mt-4">
+        <div className="flex gap-3 items-center justify-center px-5 mt-4 w-[100%]">
           <textarea
             placeholder="DESCRIPCION (opcional)"
             value={descripcion}

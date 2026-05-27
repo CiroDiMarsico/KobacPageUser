@@ -18,6 +18,8 @@ const Confirm = () => {
     }
   }, []);
 
+  const [ discount, setDiscount ] = useState(0);
+
   const total = carrito.reduce((acc, item) => {
     if (item.isPromo) return acc + item.precio * item.cantidad;
     if (!item.variants) return acc;
@@ -26,6 +28,7 @@ const Confirm = () => {
   }, 0);
 
   const [show, setShow] = useState("transferencia");
+  const [close, setClose] = useState(true);
 
   {/*msg*/ }
   const handleConfirmar = () => {
@@ -109,12 +112,12 @@ ${promosTexto ? `🎁 *PROMOS:*\n${promosTexto}\n` : ''}
               <span className="text-2xl text-center font-['koulen'] mb-4">+ ENVIO</span>
             </div>
           </div>
-          <span className="text-[18px] text-center font-['koulen'] text-white/80">(PRECIO DE ENVIO A ACORDAR)</span>
+          <span className="text-[18px] text-center font-['koulen'] text-white/70">(PRECIO DE ENVIO A ACORDAR)</span>
         </div>
 
         <hr className="w-[90%] mx-auto mt-6" />
 
-        <div className="flex flex-col mt-6 px-10">
+        <div className="flex flex-col mt-6 px-10 gap-6">
           <div className="flex justify-center items-center gap-4">
             <span className="font-['prompt'] text-3xl font-bold text-center">COMO ABONAS?</span>
             <div className="flex flex-col items-end gap-2">
@@ -123,6 +126,7 @@ ${promosTexto ? `🎁 *PROMOS:*\n${promosTexto}\n` : ''}
               <Button text="AMBOS" width="200px" height="50px" click={() => { setShow("ambos") }} color={show == "ambos" ? "#C32CFF" : "#1E1E1E"} textColor={show == "ambos" ? "#ffffff" : "#C32CFF"} />
             </div>
           </div>
+          <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100">¿Tienes un codigo de descuento?</a>
         </div>
 
         <hr className="w-[90%] mx-auto mt-6" />
@@ -137,6 +141,26 @@ ${promosTexto ? `🎁 *PROMOS:*\n${promosTexto}\n` : ''}
           textSize="20px"
           click={handleConfirmar}
         />
+      </div>
+      <div hidden={close} className="fixed inset-0 z-60 flex items-center justify-center bg-black/70" onClick={() => { setClose(true) }}>
+        <div className="relative bg-[#11111F] rounded-3xl p-6 w-[85vw] h-[35vh] flex flex-col items-center justify-center gap-4 font-['prompt']" onClick={e => e.stopPropagation()}>
+          <h1 className="font-['prompt'] text-[42px] text-center pt-0 pb-0 font-semibold">DESCUENTO</h1>
+          <input
+            type="text"
+            placeholder="CODIGO DE DESCUENTO"
+            className={`bg-[#4E486E] w-[100%] h-[50px] rounded-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0`}
+            onChange={(e) => { setDiscount(e.target.value) }}
+          />
+          <Button
+            text="CONFIRMAR"
+            width="250px"
+            height="44px"
+            color="#C32CFF"
+            textColor="#FFFFFF"
+            textSize="20px"
+            click={() => { setClose(true) }}
+          />
+        </div>
       </div>
     </main>
   );

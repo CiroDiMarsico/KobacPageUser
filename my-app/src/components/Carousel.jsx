@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 const slides = [
   { img: "./src/assets/comboDelFinde.jpeg" },
-  { img: "./src/assets/logokobac.png" },
-  { img: "./src/assets/favicon.png" },
 ];
 
 export default function Carousel() {

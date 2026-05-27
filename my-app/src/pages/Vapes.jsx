@@ -20,7 +20,7 @@ const Vapes = ({ hidden = false }) => {
     <a
       ref={divRef}
       hidden={hidden}
-      className="relative flex items-center flex-col justify-center font-['Prompt'] font-semibold mx-6 my-4 rounded-2xl p-8"
+      className="relative flex items-center flex-col justify-center font-['Prompt'] font-semibold mx-6 lg:mx-40 xl:mx-80 my-4 rounded-2xl p-8"
       style={{ background: 'linear-gradient(135deg, #1a0a2e 0%, #11111F 50%, #1a0a2e 100%)' }}
       href="https://wa.me/5493516427916?text=Hola!%20me%20pasas%20el%20catalogo%20de%20vapes%20💜"
       target="_blank"
@@ -63,7 +63,7 @@ const Vapes = ({ hidden = false }) => {
       <h1 className="text-2xl text-white/70 tracking-widest mb-3 z-10">PARA MÁS INFO</h1>
       <h1
 
-        className="text-5xl text-[#C32CFF] font-bold tracking-wider z-10"
+        className="text-5xl text-[#C32CFF] font-bold tracking-wider z-10 text-center"
         style={{ textShadow: '0 0 20px #C32CFF, 0 0 40px #C32CFF88', animation: 'pulse 2s ease-in-out infinite' }}
       >
         CLICK AQUÍ
