@@ -19,6 +19,12 @@ app.use('/api/promos', promoRoutes)
 
 const configRoutes = require('./src/routes/configRoutes')
 app.use('/api/config', configRoutes)
+
+const discountRoutes = require('./src/routes/discountRoutes')
+app.use('/api/discounts', discountRoutes)
+
+const saleRoutes = require('./src/routes/saleRoutes')
+app.use('/api/sales', saleRoutes)
 // -------------------------------
 
 //port
