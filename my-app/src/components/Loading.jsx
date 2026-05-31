@@ -2,7 +2,7 @@ const Loading = ({
   size = 'large',
 }) => {
   const styles = {
-    small: "",
+    small: "flex justify-center items-center",
     large: "flex justify-center items-center h-screen",
   };
 

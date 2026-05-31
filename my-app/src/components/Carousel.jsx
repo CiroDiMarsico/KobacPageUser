@@ -1,20 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-const slides = [
-  { img: "./src/assets/comboDelFinde.jpeg" },
-];
-
-export default function Carousel() {
+export default function Carousel({ carousel }) {
   const [current, setCurrent] = useState(0);
   const timerRef = useRef(null);
-
+  const slides = carousel
   //solo
   const resetTimer = useCallback(() => {
     clearInterval(timerRef.current);
+    if (slides.length <= 1) return  // ← si hay 1 o 0 slides no hace falta timer
     timerRef.current = setInterval(() => {
       setCurrent(c => (c + 1) % slides.length);
     }, 5000);
-  }, []);
+  }, [slides.length])
 
   //flechas
   const next = useCallback(() => {
@@ -28,9 +25,11 @@ export default function Carousel() {
   }, [resetTimer]);
 
   useEffect(() => {
-    resetTimer();
-    return () => clearInterval(timerRef.current);
-  }, [resetTimer]);
+    if (slides.length === 0) return  // ← esperar a que lleguen los datos
+    setCurrent(0)                    // ← resetear a 0 cuando lleguen
+    resetTimer()
+    return () => clearInterval(timerRef.current)
+  }, [slides.length, resetTimer])
 
   //mover con el dedo
   const touchStartX = useRef(null);

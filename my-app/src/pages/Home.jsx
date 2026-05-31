@@ -7,77 +7,42 @@ import Carousel from "../components/Carousel";
 import Loading from "../components/Loading";
 import Cart from "../components/Cart";
 import grafittiKobac from "../assets/grafittiKobac.png";
-
+import api from '../api/axios'
 const Home = () => {
+  // ------------------------------
+  //-------------DATOS-------------
+  // ------------------------------
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const data = [
-    {
-      id: 1,
-      img: "./src/assets/skyy.png",
-      name: "SKYY",
-      salePrice: 11000,
-      category: "Bebidas blancas",
-      variants: [
-        { id: 1, name: "frutos rojos", isActive: true, stock: 4 },
-        { id: 2, name: "cosmic", isActive: true, stock: 0 },
-        { id: 3, name: "apricot", isActive: true, stock: 5 }
-      ]
-    },
-    {
-      id: 2,
-      img: "./src/assets/botella.png",
-      name: "COCA COLA 2.25L",
-      salePrice: 5000,
-      category: "Gaseosas",
-      variants: [
-        { id: 4, name: "coca cola 2.25L", isActive: true, stock: 5 }
-      ]
-    },
-    {
-      id: 3,
-      img: "./src/assets/botella.png",
-      name: "SMIRNOFF",
-      salePrice: 9800,
-      category: "Bebidas blancas",
-      variants: [
-        { id: 5, name: "frutos rojos", isActive: true, stock: 2 },
-        { id: 6, name: "tropical fruits", isActive: true, stock: 3 },
-      ]
-    },
-    {
-      id: 4,
-      img: "./src/assets/botella.png",
-      name: "NEW STYLE",
-      salePrice: 5000,
-      category: "Bebidas blancas",
-      variants: [
-        { id: 7, name: "frutos rojos", isActive: true, stock: 2 },
-        { id: 8, name: "SANDIA", isActive: true, stock: 3 },
-      ]
-    }
-  ]
-  const promos = [
-    {
-      id: 1,
-      name: "COMBO DEL FINDE",
-      img: "./src/assets/comboDelFinde.jpeg",
-      price: 25000,
-      items: [
-        { idProduct: 1, quantity: 1 },
-        { idProduct: 3, quantity: 2 },
-      ]
-    },
-    {
-      id: 2,
-      name: "COMBO DEL FINDE 2",
-      img: "./src/assets/comboDelFinde.jpeg",
-      price: 30000,
-      items: [
-        { idProduct: 3, quantity: 1 },
-        { idProduct: 2, quantity: 2 },
-      ]
-    }
-  ]
+  useEffect(() => {
+    setLoading(true)
+    api.get('/products?rubro=bebidas')
+      .then(res => setData(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const [promos, setPromos] = useState([])
+
+  useEffect(() => {
+    api.get('/promos?rubro=bebidas')
+      .then(res => setPromos(res.data))
+      .catch(err => console.error(err))
+  }, [])
+
+  const [carousel, setCarousel] = useState([])
+  const [marquee, setMarquee] = useState([])
+
+  useEffect(() => {
+    api.get('/config')
+      .then(res => {
+        setCarousel(res.data.carousel)
+        setMarquee(res.data.marquee)
+      })
+      .catch(err => console.error(err))
+  }, [])
+  // ------------------------------
 
   const [search, setSearch] = useState("");
 
@@ -189,29 +154,29 @@ const Home = () => {
   return (
     <main
       className="bg-top bg-repeat min-h-screen text-white pt-[80px]"
-      style={{ 
-        backgroundImage: `url(${grafittiKobac})` 
+      style={{
+        backgroundImage: `url(${grafittiKobac})`
       }}
     >
 
       {/*carousel*/}
       <div>
-        <Carousel />
+        <Carousel carousel={carousel} />
       </div>
 
       {/*marquee*/}
       <div className="bg-[#4E486E] h-[50px] overflow-hidden flex items-center justify-center font-[koulen] text-[20px]">
         <div className="flex whitespace-nowrap animate-marquee">
           <div className="flex gap-[80px] px-[80px] md:gap-[300px] md:px-[300px]">
-            <span>ENVIOS A TODA ALTA GRACIA</span>
-            <span>PROMOS TODAS LAS SEMANAS</span>
-            <span>VIERNES Y SABADOS</span>
+            {marquee.map(item => (
+              <span key={item.text}>{item.text}</span>
+            ))}
           </div>
 
           <div className="flex gap-[80px] md:gap-[300px]">
-            <span>ENVIOS A TODA ALTA GRACIA</span>
-            <span>PROMOS TODAS LAS SEMANAS</span>
-            <span>VIERNES Y SABADOS</span>
+            {marquee.map(item => (
+              <span key={item.text}>{item.text}</span>
+            ))}
           </div>
         </div>
       </div>
@@ -237,7 +202,7 @@ const Home = () => {
       <div className="mt-[40px] min-h-[60vh]">
         <div key={show} className="animate-slide">
           {show === "promos" && <Promos data={data} promos={promos} agregarPromoAlCarrito={agregarPromoAlCarrito} getStockDisponible={getStockDisponible} carrito={carrito} />}
-          {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={dataFiltrada} getStockDisponible={getStockDisponible} carrito={carrito} />}
+          {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={dataFiltrada} getStockDisponible={getStockDisponible} carrito={carrito} loading={loading} />}
           {show === "vapes" && <Vapes />}
         </div>
       </div>

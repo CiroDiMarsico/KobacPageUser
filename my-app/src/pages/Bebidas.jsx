@@ -1,3 +1,4 @@
+import Loading from "../components/Loading";
 import Product from "../components/Product";
 
 const Bebidas = ({
@@ -5,7 +6,8 @@ const Bebidas = ({
   agregarAlCarrito,
   data,
   getStockDisponible,
-  carrito
+  carrito,
+  loading
 }) => {
 
   return (
@@ -28,6 +30,7 @@ const Bebidas = ({
           </div>
         </div>
       ))}
+      {loading && <Loading size="small" />}
     </div>
   );
 }
