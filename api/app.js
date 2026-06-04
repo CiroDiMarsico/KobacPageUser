@@ -25,6 +25,9 @@ app.use('/api/discounts', discountRoutes)
 
 const saleRoutes = require('./src/routes/saleRoutes')
 app.use('/api/sales', saleRoutes)
+
+const authRoutes = require('./src/routes/authRoutes')
+app.use('/api/auth', authRoutes)
 // -------------------------------
 
 //port
