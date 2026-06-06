@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import api from "../api/axios"
+import grafittiKobac from "../assets/grafittiKobac.png";
 
 const AdminLogin = () => {
   const navigate = useNavigate()
@@ -34,6 +35,14 @@ const AdminLogin = () => {
     <main className="bg-[#11111F] min-h-dvh flex items-center justify-center font-['prompt']">
       {/* Fondo con gradiente sutil */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute top-0 left-0 w-full h-full bg-cover bg-bottom"
+          style={{ backgroundImage: `url(${grafittiKobac})` }}
+        ></div>
+        <div
+          className="absolute top-0 left-0 w-full h-full bg-cover bg-top hidden xl:block"
+          style={{ backgroundImage: `url(${grafittiKobac})` }}
+        ></div>
         <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-[#C32CFF]/5 blur-[120px]" />
         <div className="absolute bottom-[-100px] left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full bg-[#6F3784]/10 blur-[100px]" />
       </div>
@@ -104,7 +113,7 @@ const AdminLogin = () => {
           </button>
         </div>
 
-        <p className="font-['koulen'] text-[12px] text-white/20 tracking-widest">
+        <p className="font-['koulen'] text-[12px] text-white/70 tracking-widest">
           ACCESO RESTRINGIDO
         </p>
       </div>
