@@ -1,6 +1,12 @@
 //npm install mysql2
 //npm install dotenv
+//npm install express
+//npm install cors
+//npm install nodemon
+//npm install multer
+
 const express = require('express')
+const path = require('path')
 require('dotenv').config()
 const app = express()
 const cors = require('cors')
@@ -8,6 +14,7 @@ app.use(cors({ origin: 'http://localhost:5173' }))
 
 app.use(express.json())
 
+app.use(express.static(path.join(__dirname, 'public')))
 // -------------------------------
 //-------------ROUTES-------------
 // -------------------------------
@@ -28,6 +35,12 @@ app.use('/api/sales', saleRoutes)
 
 const authRoutes = require('./src/routes/authRoutes')
 app.use('/api/auth', authRoutes)
+
+const adminRoutes = require('./src/routes/adminRoutes')
+app.use('/api/admin', adminRoutes)
+
+const uploadRoutes = require('./src/routes/uploadRoutes')
+app.use('/api/admin', uploadRoutes)
 // -------------------------------
 
 //port
