@@ -115,6 +115,7 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
       await api.post('/sales', {
         informacion,
         carrito,
+        location: `${ubicacion.calle} ${ubicacion.numero} - ${ubicacion.barrio}${ubicacion.descripcion ? ` (${ubicacion.descripcion})` : ''}`,
         rubro: 'bebidas',
         discount: discount ? {
           id: discount.id,

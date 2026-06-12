@@ -1,10 +1,10 @@
 const pool = require('../db/connection')
 
-const create = async (conn, { clientId, rubro, total, discountCodeId, discountAmount, weekCode }) => {
+const create = async (conn, { clientId, rubro, total, discountCodeId, discountAmount, weekCode, location }) => {
     const [result] = await conn.query(`
-        INSERT INTO sales (rubro, client_id, is_wholesale, status, total, discount_code_id, discount_amount, week_code)
-        VALUES (?, ?, FALSE, 'pending', ?, ?, ?, ?)
-    `, [rubro, clientId, total, discountCodeId || null, discountAmount || 0, weekCode])
+        INSERT INTO sales (rubro, client_id, is_wholesale, status, total, discount_code_id, discount_amount, week_code, location)
+        VALUES (?, ?, FALSE, 'pending', ?, ?, ?, ?, ?)
+    `, [rubro, clientId, total, discountCodeId || null, discountAmount || 0, weekCode, location || null])
     return result.insertId
 }
 
@@ -15,7 +15,6 @@ const createItems = async (conn, items) => {
             VALUES (?, ?, ?, ?, ?)
         `, [item.saleId, item.variantId, item.promoId || null, item.quantity, item.unitPrice])
 
-        // descontar stock FIFO
         await descontarFIFO(conn, item.variantId, item.quantity, result.insertId)
     }
 }
@@ -41,19 +40,15 @@ const descontarFIFO = async (conn, variantId, quantity, saleItemId) => {
 
     for (const lot of lots) {
         if (remaining <= 0) break
-
         const toDiscount = Math.min(lot.remaining_quantity, remaining)
-
         await conn.query(`
             UPDATE lots SET remaining_quantity = remaining_quantity - ?
             WHERE id = ?
         `, [toDiscount, lot.id])
-
         await conn.query(`
             INSERT INTO stock_movements (variant_id, lot_id, sale_item_id, type, quantity, reason)
             VALUES (?, ?, ?, 'out', ?, 'sale')
         `, [variantId, lot.id, saleItemId, toDiscount])
-
         remaining -= toDiscount
     }
 

@@ -49,24 +49,29 @@ const getAll = async (rubro) => {
         if (row.variantId) {
             const salePrice = Number(row.sale_price)
             const purchasePrice = Number(row.lastPurchasePrice ?? 0)
-            const ganancia = salePrice - purchasePrice
-            const porcentaje = purchasePrice > 0
+            const ganancia = purchasePrice > 0 ? salePrice - purchasePrice : null
+            // markup  = ganancia / costo * 100
+            const markup = purchasePrice > 0
                 ? ((ganancia / purchasePrice) * 100).toFixed(1)
+                : null
+            // margen  = ganancia / precio venta * 100
+            const margen = purchasePrice > 0
+                ? ((ganancia / salePrice) * 100).toFixed(1)
                 : null
 
             map[row.id].variants.push({
                 id: row.variantId,
                 name: row.variantName,
                 isActive: Boolean(row.variantActive),
-                stock: row.stock,
+                // stock intencionalmente omitido — va en la sección Stock
                 lastPurchasePrice: purchasePrice || null,
-                ganancia: ganancia || null,
-                porcentaje: porcentaje ? Number(porcentaje) : null
+                ganancia: ganancia,
+                markup: markup ? Number(markup) : null,   // % sobre costo
+                margen: margen ? Number(margen) : null,   // % sobre venta
             })
         }
     }
 
-    // isActive del producto se deriva de sus variantes
     products.forEach(p => {
         p.isActive = p.variants.some(v => v.isActive)
     })
