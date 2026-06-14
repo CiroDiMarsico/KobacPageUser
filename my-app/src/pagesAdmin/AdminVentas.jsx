@@ -111,8 +111,7 @@ const CancelModal = ({ saleId, onClose, onSaved }) => {
 
     return (
         <Modal title="CANCELAR VENTA" onClose={onClose}>
-            <p className="font-['koulen'] text-[13px] text-white/50">El stock de los lotes descontados se va a restaurar automáticamente.</p>
-            <Input label="MOTIVO (opcional)" value={reason} onChange={setReason} placeholder="Ej: Cliente canceló, sin stock..." />
+            <Input label="MOTIVO (opcional)" value={reason} onChange={setReason} />
             <div className="flex gap-3 justify-end">
                 <Btn color="ghost" onClick={onClose}>VOLVER</Btn>
                 <Btn color="red" onClick={handleConfirm} disabled={loading}>{loading ? "CANCELANDO..." : "CONFIRMAR"}</Btn>
@@ -137,7 +136,6 @@ const ShippingModal = ({ sale, onClose, onSaved }) => {
 
     return (
         <Modal title="PRECIO DE ENVÍO" onClose={onClose}>
-            <p className="font-['koulen'] text-[13px] text-white/50">El envío lo abona el cliente y no entra en el cálculo de ganancia.</p>
             <Input label="PRECIO ENVÍO" value={price} onChange={setPrice} type="number" min="0" />
             <div className="flex gap-3 justify-end">
                 <Btn color="ghost" onClick={onClose}>CANCELAR</Btn>
@@ -280,9 +278,6 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
 
             <div className="flex flex-col gap-3">
                 <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">PRODUCTOS</label>
-                {items.length === 0 && (
-                    <p className="font-['koulen'] text-[14px] text-white/20 text-center py-2">Agregá los productos vendidos</p>
-                )}
                 {items.map((item, i) => (
                     <div key={i} className="flex flex-col gap-2 bg-white/[0.03] border border-white/10 rounded-xl p-3">
                         <div className="flex items-center gap-2">
@@ -330,7 +325,7 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                 <Btn small color="ghost" onClick={addItem}>+ AGREGAR ITEM</Btn>
             </div>
 
-            <Input label="ENVÍO (lo paga el cliente)" value={shippingPrice} onChange={setShippingPrice} type="number" min="0" placeholder="0" />
+            <Input label="ENVÍO" value={shippingPrice} onChange={setShippingPrice} type="number" min="0" placeholder="0" />
             <PaymentsEditor payments={payments} onChange={setPayments} />
 
             {items.length > 0 && (
@@ -429,7 +424,7 @@ const SaleCard = ({ sale, onRefresh }) => {
                 ))}
                 {sale.shippingPrice > 0 && (
                     <div className="flex items-center justify-between">
-                        <span className="font-['koulen'] text-[13px] text-white/30">Envío (cliente → cadete)</span>
+                        <span className="font-['koulen'] text-[13px] text-white/30">Envio</span>
                         <span className="font-['koulen'] text-[13px] text-white/30">{fmt(sale.shippingPrice)}</span>
                     </div>
                 )}
@@ -719,9 +714,6 @@ const AdminVentas = () => {
                                 <p className={`font-['koulen'] text-[20px] ${gananciaEnProceso > 0 ? "text-green-400" : "text-red-400"}`}>
                                     {fmt(gananciaEnProceso)}
                                 </p>
-                            </div>
-                            <div className="ml-auto self-center">
-                                <p className="font-['koulen'] text-[11px] text-white/20">auto-actualiza c/20s</p>
                             </div>
                         </div>
                     )}

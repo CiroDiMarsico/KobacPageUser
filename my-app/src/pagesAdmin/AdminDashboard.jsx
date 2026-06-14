@@ -5,12 +5,20 @@ import AdminProductos from "./AdminProductos"
 import AdminPromos from "./AdminPromos"
 import AdminStock from "./AdminStock"
 import AdminVentas from "./AdminVentas"
+import AdminPageUser from "./AdminPageUser"
+import AdminDashboardGanancias from "./AdminDashboardGanancias"
+import AdminDashboardProductos from "./AdminDashboardProductos"
+import AdminClientes from "./AdminClientes"
 
 const SECCIONES = {
   "PRODUCTOS": <AdminProductos />,
   "PROMOS":    <AdminPromos />,
   "STOCK":     <AdminStock />,
   "VENTAS":    <AdminVentas />,
+  "ADMIN PAGE USER": <AdminPageUser />,
+  "DASHBOARD GANANCIAS":  <AdminDashboardGanancias />,
+  "DASHBOARD PRODUCTOS":  <AdminDashboardProductos />,
+  "DASHBOARD CLIENTES": <AdminClientes />,
 }
 
 const AdminDashboard = () => {
@@ -59,6 +67,7 @@ const AdminDashboard = () => {
             <ul className="w-full flex flex-col gap-1 mb-6">
               <LiAdmin text="DASHBOARD GANANCIAS" active={page === "DASHBOARD GANANCIAS"} onClick={() => handleNav("DASHBOARD GANANCIAS")} />
               <LiAdmin text="DASHBOARD PRODUCTOS" active={page === "DASHBOARD PRODUCTOS"} onClick={() => handleNav("DASHBOARD PRODUCTOS")} />
+              <LiAdmin text="DASHBOARD CLIENTES" active={page === "DASHBOARD CLIENTES"} onClick={() => handleNav("DASHBOARD CLIENTES")} />
             </ul>
             <h2 className="text-xs font-semibold text-gray-400 tracking-wider uppercase mb-2 px-1 text-center">Gestión Comercial</h2>
             <hr className="border-white/20 mb-1" />

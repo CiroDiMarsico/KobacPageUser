@@ -1,9 +1,13 @@
 const express = require('express')
+const upload = require('../middleware/upload')
 const router = express.Router()
 const productCtrl = require('../controllers/adminProductController')
 const promoCtrl   = require('../controllers/adminPromoController')
 const stockCtrl   = require('../controllers/adminStockController')
 const salesCtrl   = require('../controllers/adminSalesController')
+const pageUserCtrl = require('../controllers/adminPageUserController')
+const dashCtrl = require('../controllers/adminDashboardController')
+const clientesCtrl = require('../controllers/adminClientesController')
 const { requireAuth } = require('../middleware/requireAuth')
 
 router.use(requireAuth)
@@ -36,5 +40,30 @@ router.post('/sales',               salesCtrl.createManual)
 router.patch('/sales/:id/status',   salesCtrl.updateStatus)
 router.patch('/sales/:id/shipping', salesCtrl.updateShipping)
 router.put('/sales/:id',            salesCtrl.updateSale)
+
+// ─── Page User ────────────────────────────────────────────────────────────────
+router.get('/page-user/carousel',              pageUserCtrl.getCarousel)
+router.post('/page-user/carousel',             upload.single('image'), pageUserCtrl.uploadAndAddCarousel)
+router.post('/page-user/carousel/reorder',     pageUserCtrl.reorderCarousel)
+router.put('/page-user/carousel/:id',          pageUserCtrl.updateCarouselImage)
+router.delete('/page-user/carousel/:id',       pageUserCtrl.deleteCarouselImage)
+
+router.get('/page-user/marquee',               pageUserCtrl.getMarquee)
+router.post('/page-user/marquee',              pageUserCtrl.addMarqueeItem)
+router.post('/page-user/marquee/reorder',      pageUserCtrl.reorderMarquee)
+router.put('/page-user/marquee/:id',           pageUserCtrl.updateMarqueeItem)
+router.delete('/page-user/marquee/:id',        pageUserCtrl.deleteMarqueeItem)
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+router.get('/dashboard/sales-chart',   dashCtrl.getSalesChart)
+router.get('/dashboard/kpis',          dashCtrl.getKPIs)
+router.get('/dashboard/top-products',  dashCtrl.getTopProducts)
+router.get('/dashboard/low-stock',     dashCtrl.getLowStock)
+router.get('/dashboard/last-prices',   dashCtrl.getLastPrices)
+router.get('/clientes/stats',       clientesCtrl.getStatsGenerales)
+router.get('/clientes/top',         clientesCtrl.getTopClientes)
+router.get('/clientes/:id',         clientesCtrl.getClienteDetalle)
+
+
 
 module.exports = router

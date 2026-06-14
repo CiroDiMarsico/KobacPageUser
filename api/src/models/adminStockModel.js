@@ -195,10 +195,38 @@ const adjustStock = async (variantId, stockReal, reason = '') => {
 
         // si es ajuste positivo, crear un lote con precio 0
         if (diff > 0) {
+            const [[lastLot]] = await conn.query(`
+        SELECT purchase_price FROM lots
+        WHERE variant_id = ?
+        ORDER BY created_at DESC LIMIT 1
+    `, [variantId])
+            const lastPrice = lastLot?.purchase_price ?? 0
             await conn.query(`
-                INSERT INTO lots (variant_id, initial_quantity, remaining_quantity, purchase_price)
-                VALUES (?, ?, ?, 0)
-            `, [variantId, qty, qty])
+        INSERT INTO lots (variant_id, initial_quantity, remaining_quantity, purchase_price)
+        VALUES (?, ?, ?, ?)
+    `, [variantId, qty, qty, lastPrice])
+        } else {
+            // negativo — descontar de lotes más viejos primero (FIFO)
+            let remaining = qty
+            const [lots] = await conn.query(`
+        SELECT id, remaining_quantity FROM lots
+        WHERE variant_id = ? AND remaining_quantity > 0
+        ORDER BY created_at ASC
+    `, [variantId])
+
+            for (const lot of lots) {
+                if (remaining <= 0) break
+                const toDiscount = Math.min(lot.remaining_quantity, remaining)
+                await conn.query(`
+            UPDATE lots SET remaining_quantity = remaining_quantity - ?
+            WHERE id = ?
+        `, [toDiscount, lot.id])
+                await conn.query(`
+            INSERT INTO stock_movements (variant_id, lot_id, type, quantity, reason)
+            VALUES (?, ?, 'out', ?, 'adjustment')
+        `, [variantId, lot.id, toDiscount])
+                remaining -= toDiscount
+            }
         }
 
         await conn.commit()
