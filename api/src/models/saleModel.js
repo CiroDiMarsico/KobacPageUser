@@ -9,6 +9,47 @@ const create = async (conn, { clientId, rubro, total, discountCodeId, discountAm
 }
 
 const createItems = async (conn, items) => {
+    const agotados = []   // stock === 0, se sacan del carrito
+    const parciales = []  // 0 < stock < quantity, se ajusta la cantidad
+
+    for (const item of items) {
+        const [[variant]] = await conn.query(
+            `SELECT id, name, stock FROM variants WHERE id = ? FOR UPDATE`,
+            [item.variantId]
+        )
+        if (!variant || variant.stock < item.quantity) {
+            const [[product]] = await conn.query(
+                `SELECT p.name FROM products p
+                 JOIN variants v ON v.product_id = p.id
+                 WHERE v.id = ?`,
+                [item.variantId]
+            )
+            if (!variant || variant.stock === 0) {
+                agotados.push({
+                    variantId: item.variantId,
+                    productName: product?.name ?? '',
+                    variantName: variant?.name ?? String(item.variantId)
+                })
+            } else {
+                parciales.push({
+                    variantId: item.variantId,
+                    productName: product?.name ?? '',
+                    variantName: variant?.name ?? String(item.variantId),
+                    pedido: item.quantity,
+                    disponible: variant.stock
+                })
+            }
+        }
+    }
+
+    if (agotados.length > 0 || parciales.length > 0) {
+        const err = new Error('Stock insuficiente')
+        err.code = 'OUT_OF_STOCK'
+        err.agotados = agotados
+        err.parciales = parciales
+        throw err
+    }
+
     for (const item of items) {
         const [result] = await conn.query(`
             INSERT INTO sale_items (sale_id, variant_id, promo_id, quantity, unit_price)

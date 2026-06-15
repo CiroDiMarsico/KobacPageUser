@@ -10,27 +10,22 @@ const create = async (req, res) => {
 
         const { informacion, carrito, rubro, discount, payments, total, location } = req.body
 
-        // 1. cliente
         const clientId = await clientModel.findOrCreate(informacion.nombre, informacion.telefono)
 
-        // 2. week_code
         const now = new Date()
         const year = now.getFullYear()
         const week = String(getWeekNumber(now)).padStart(2, '0')
         const month = now.getMonth() + 1
         const weekCode = `${year}-M${month}-W${week}`
 
-        // 3. total y descuento
         const discountCodeId = discount?.id || null
         const discountAmount = discount?.amount || 0
 
-        // 4. crear venta con location
         const saleId = await saleModel.create(conn, {
             clientId, rubro, total, discountCodeId, discountAmount, weekCode,
             location: location || null
         })
 
-        // 5. armar sale_items desde el carrito
         const items = []
 
         for (const item of carrito) {
@@ -42,7 +37,7 @@ const create = async (req, res) => {
                                 saleId,
                                 variantId: Number(variantId),
                                 promoId: item.idPromo,
-                                quantity,
+                                quantity: Number(quantity),
                                 unitPrice: 0
                             })
                         }
@@ -50,24 +45,22 @@ const create = async (req, res) => {
                 }
             } else {
                 for (const [variantId, quantity] of Object.entries(item.variants)) {
-                    items.push({
-                        saleId,
-                        variantId: Number(variantId),
-                        promoId: null,
-                        quantity,
-                        unitPrice: item.precio
-                    })
+                    if (quantity > 0) {
+                        items.push({
+                            saleId,
+                            variantId: Number(variantId),
+                            promoId: null,
+                            quantity: Number(quantity),
+                            unitPrice: item.precio
+                        })
+                    }
                 }
             }
         }
 
-        // 6. crear items y descontar stock FIFO
         await saleModel.createItems(conn, items)
-
-        // 7. pagos
         await saleModel.createPayments(conn, saleId, payments)
 
-        // 8. desactivar código de descuento
         if (discount?.code) {
             await discountModel.deactivate(conn, discount.code)
         }
@@ -78,6 +71,13 @@ const create = async (req, res) => {
     } catch (error) {
         await conn.rollback()
         console.error(error)
+        if (error.code === 'OUT_OF_STOCK') {
+            return res.status(409).json({
+                code: 'OUT_OF_STOCK',
+                agotados: error.agotados,
+                parciales: error.parciales
+            })
+        }
         res.status(500).json({ error: 'Error al registrar la venta' })
     } finally {
         conn.release()

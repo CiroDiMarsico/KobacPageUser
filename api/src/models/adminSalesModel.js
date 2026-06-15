@@ -89,9 +89,12 @@ const BASE_QUERY = `
         p.name           AS product_name,
         pr.name          AS promo_name,
         (
-            SELECT l.purchase_price FROM lots l
-            WHERE l.variant_id = si.variant_id
-            ORDER BY l.created_at DESC LIMIT 1
+            SELECT SUM(sm.quantity * l.purchase_price) / SUM(sm.quantity)
+            FROM stock_movements sm
+            JOIN lots l ON l.id = sm.lot_id
+            WHERE sm.sale_item_id = si.id
+            AND sm.type = 'out'
+            AND sm.reason = 'sale'
         ) AS purchase_price
     FROM sales s
     LEFT JOIN clients c ON c.id = s.client_id

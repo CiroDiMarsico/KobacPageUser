@@ -29,9 +29,22 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
             .map(variant =>
               <div key={variant.id} className="w-full flex items-center justify-between gap-5">
                 <h1 className="font-[koulen] text-[22px]">{variant.name}</h1>
+
                 {variant.stock === 0 &&
-                  <h1 className="font-[koulen] text-[24px] text-[#C32CFF]">AGOTADO</h1>
+                  <div className="flex items-center gap-4 relative">
+                    <h1 className="font-[koulen] text-[24px] text-[#C32CFF]">AGOTADO</h1>
+                    {(quantities[String(variant.id)] ?? 0) > 0 && (
+                      <>
+                        <h1 className="font-[koulen] text-[22px] w-4 text-center">{quantities[String(variant.id)]}</h1>
+                        <button
+                          onClick={() => decrement(variant.id)}
+                          className="bg-[#C32CFF] rounded-full w-[45px] h-[45px] text-4xl flex items-center justify-center"
+                        >-</button>
+                      </>
+                    )}
+                  </div>
                 }
+
                 {variant.stock > 0 &&
                   <div className="flex items-center gap-4 relative">
                     <button
@@ -43,7 +56,6 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
                       className="bg-[#C32CFF] rounded-full w-[45px] h-[45px] text-3xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                     >+</button>
                     <h1 className="font-[koulen] text-[22px] w-4 text-center">{quantities[String(variant.id)] ?? 0}</h1>
-                    {/* Aviso de stock máximo */}
                     {(quantities[String(variant.id)] >= getStockDisponible(variant.id) || getStockDisponible(variant.id) === 0) && (
                       <span className="font-['koulen'] text-[13px] absolute text-center top-[-10px] left-1/2 -translate-x-1/2 text-[#FF4444]/80">
                         {`max ${getStockDisponible(variant.id)}`}
