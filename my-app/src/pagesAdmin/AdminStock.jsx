@@ -71,6 +71,9 @@ const AjusteModal = ({ variant, productName, onClose, onSaved }) => {
             <div className="flex flex-col gap-1">
                 <p className="font-['koulen'] text-[16px] text-white/70">{productName}</p>
                 <p className="font-['koulen'] text-[14px] text-white/40">{variant.name}</p>
+                {variant.description && (
+                    <p className="font-['koulen'] text-[12px] text-white/30 italic">{variant.description}</p>
+                )}
             </div>
             <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
                 <span className="font-['koulen'] text-[14px] text-white/50">STOCK ACTUAL</span>
@@ -99,51 +102,96 @@ const AjusteModal = ({ variant, productName, onClose, onSaved }) => {
 // ─── Modal nueva compra ───────────────────────────────────────────────────────
 const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewSupplier }) => {
     const [supplierId, setSupplierId] = useState("")
-    const [items, setItems] = useState([]) // [{ variantId, productName, variantName, quantity, unitPrice }]
+    const [items, setItems] = useState([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
 
-    // nuevo proveedor inline
+    // tipo de cambio global para vapes (se aplica a todos los items)
+    const [exchangeRate, setExchangeRate] = useState("")
+
     const [showNewSupplier, setShowNewSupplier] = useState(false)
     const [newSupplierName, setNewSupplierName] = useState("")
     const [newSupplierPhone, setNewSupplierPhone] = useState("")
     const [savingSupplier, setSavingSupplier] = useState(false)
 
-    // aplanar variantes para el selector
+    const isVapes = rubro === 'vapes'
+
     const allVariants = products.flatMap(p =>
         p.variants.filter(v => v.isActive).map(v => ({
             variantId: v.id,
             productName: p.name,
             variantName: v.name,
-            lastPrice: v.lastPurchasePrice
+            lastPrice: v.lastPurchasePrice,
+            // para vapes guardamos también el último precio USD si existe
+            lastPriceUsd: v.lastPriceUsd ?? null,
         }))
     )
 
     const addItem = () => {
-        setItems(prev => [...prev, { variantId: "", productName: "", variantName: "", quantity: 1, unitPrice: "" }])
+        setItems(prev => [...prev, {
+            variantId: "", productName: "", variantName: "",
+            quantity: 1, unitPrice: "", priceUsd: ""
+        }])
     }
 
     const removeItem = (i) => setItems(prev => prev.filter((_, idx) => idx !== i))
 
     const updateVariant = (i, variantId) => {
         const found = allVariants.find(v => v.variantId === Number(variantId))
-        setItems(prev => prev.map((item, idx) => idx !== i ? item : {
-            ...item,
-            variantId: Number(variantId),
-            productName: found?.productName ?? "",
-            variantName: found?.variantName ?? "",
-            unitPrice: found?.lastPrice != null ? String(found.lastPrice) : ""
+        setItems(prev => prev.map((item, idx) => {
+            if (idx !== i) return item
+            const priceUsd = found?.lastPriceUsd != null ? String(found.lastPriceUsd) : ""
+            const tc = Number(exchangeRate) || 0
+            const unitPrice = isVapes && priceUsd && tc
+                ? String(Math.round(Number(priceUsd) * tc * 100) / 100)
+                : (found?.lastPrice != null ? String(found.lastPrice) : "")
+            return {
+                ...item,
+                variantId: Number(variantId),
+                productName: found?.productName ?? "",
+                variantName: found?.variantName ?? "",
+                priceUsd,
+                unitPrice,
+            }
         }))
     }
 
     const updateItem = (i, field, value) =>
-        setItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
+        setItems(prev => prev.map((item, idx) => {
+            if (idx !== i) return item
+            const updated = { ...item, [field]: value }
+            // si cambia priceUsd y hay TC, recalcular unitPrice automáticamente
+            if (isVapes && (field === 'priceUsd') && exchangeRate) {
+                const tc = Number(exchangeRate) || 0
+                const usd = Number(value) || 0
+                updated.unitPrice = tc > 0 && usd > 0 ? String(Math.round(usd * tc * 100) / 100) : updated.unitPrice
+            }
+            return updated
+        }))
+
+    // cuando cambia el TC global, recalcular todos los items que tienen priceUsd
+    const handleExchangeRateChange = (val) => {
+        setExchangeRate(val)
+        const tc = Number(val) || 0
+        if (!isVapes || tc === 0) return
+        setItems(prev => prev.map(item => {
+            const usd = Number(item.priceUsd) || 0
+            if (usd === 0) return item
+            return { ...item, unitPrice: String(Math.round(usd * tc * 100) / 100) }
+        }))
+    }
 
     const total = items.reduce((acc, i) => {
         const q = Number(i.quantity) || 0
         const p = Number(i.unitPrice) || 0
         return acc + q * p
     }, 0)
+
+    const totalUsd = isVapes ? items.reduce((acc, i) => {
+        const q = Number(i.quantity) || 0
+        const u = Number(i.priceUsd) || 0
+        return acc + q * u
+    }, 0) : 0
 
     const handleSaveSupplier = async () => {
         if (!newSupplierName) return
@@ -153,8 +201,7 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
             await onNewSupplier()
             setSupplierId(String(res.data.id))
             setShowNewSupplier(false)
-            setNewSupplierName("")
-            setNewSupplierPhone("")
+            setNewSupplierName(""); setNewSupplierPhone("")
         } catch (e) {
             setError("Error al crear proveedor")
         } finally { setSavingSupplier(false) }
@@ -162,17 +209,20 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
 
     const handleSave = async () => {
         if (items.length === 0) { setError("Agregá al menos un item"); return }
-        if (items.some(i => !i.variantId || !i.quantity || !i.unitPrice))
-            { setError("Completá todos los campos de cada item"); return }
+        if (items.some(i => !i.variantId || !i.quantity || !i.unitPrice)) { setError("Completá todos los campos de cada item"); return }
+        if (isVapes && !exchangeRate) { setError("Ingresá el tipo de cambio"); return }
         setLoading(true); setError("")
         try {
             await api.post('/admin/purchases', {
                 supplierId: supplierId || null,
                 rubro,
+                exchangeRate: isVapes ? Number(exchangeRate) : null,
                 items: items.map(i => ({
                     variantId: i.variantId,
                     quantity: Number(i.quantity),
-                    unitPrice: Number(i.unitPrice)
+                    unitPrice: Number(i.unitPrice),
+                    priceUsd: isVapes && i.priceUsd ? Number(i.priceUsd) : null,
+                    exchangeRate: isVapes ? Number(exchangeRate) : null,
                 }))
             }, authHeaders())
             onSaved()
@@ -209,19 +259,39 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
                 )}
             </div>
 
+            {/* Tipo de cambio — solo vapes */}
+            {isVapes && (
+                <div className="flex flex-col gap-1">
+                    <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">
+                        TIPO DE CAMBIO (USD → ARS)
+                    </label>
+                    <div className="flex items-center gap-3">
+                        <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-['koulen'] text-[14px] text-white/30">$</span>
+                            <input type="number" min="0" step="1" value={exchangeRate}
+                                onChange={e => handleExchangeRateChange(e.target.value)}
+                                placeholder="Ej: 1500"
+                                className="bg-[#1E1E2E] border border-[#C32CFF]/40 rounded-xl h-[42px] pl-7 pr-4 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/80 transition-colors w-full" />
+                        </div>
+                        {exchangeRate && (
+                            <span className="font-['koulen'] text-[13px] text-white/40">
+                                1 USD = {fmt(Number(exchangeRate))}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Items */}
             <div className="flex flex-col gap-3">
                 <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">PRODUCTOS</label>
 
                 {items.length === 0 && (
-                    <p className="font-['koulen'] text-[14px] text-white/20 text-center py-3">
-                        Agregar compra
-                    </p>
+                    <p className="font-['koulen'] text-[14px] text-white/20 text-center py-3">Agregar compra</p>
                 )}
 
                 {items.map((item, i) => (
                     <div key={i} className="flex flex-col gap-2 bg-white/[0.03] border border-white/10 rounded-xl p-3">
-                        {/* Selector de variante */}
                         <select value={item.variantId} onChange={e => updateVariant(i, e.target.value)}
                             className="w-full bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60">
                             <option value="">— elegir producto/variante —</option>
@@ -234,21 +304,42 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
                             ))}
                         </select>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                             {/* Cantidad */}
-                            <div className="flex flex-col gap-1 flex-1">
-                                <label className="font-['koulen'] text-[11px] text-white/30">CANTIDAD</label>
+                            <div className="flex flex-col gap-1 w-[80px]">
+                                <label className="font-['koulen'] text-[11px] text-white/30">CANT.</label>
                                 <input type="number" min="1" value={item.quantity}
                                     onChange={e => updateItem(i, 'quantity', e.target.value)}
                                     className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full" />
                             </div>
-                            {/* Precio unitario */}
-                            <div className="flex flex-col gap-1 flex-1">
-                                <label className="font-['koulen'] text-[11px] text-white/30">PRECIO UNIT.</label>
-                                <input type="number" min="0" value={item.unitPrice}
-                                    onChange={e => updateItem(i, 'unitPrice', e.target.value)}
-                                    className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full" />
+
+                            {/* Precio USD — solo vapes */}
+                            {isVapes && (
+                                <div className="flex flex-col gap-1 flex-1 min-w-[90px]">
+                                    <label className="font-['koulen'] text-[11px] text-white/30">USD</label>
+                                    <div className="relative">
+                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 font-['koulen'] text-[12px] text-green-400/60">U$</span>
+                                        <input type="number" min="0" step="0.5" value={item.priceUsd}
+                                            onChange={e => updateItem(i, 'priceUsd', e.target.value)}
+                                            className="bg-[#1E1E2E] border border-green-500/20 rounded-xl h-[38px] pl-7 pr-2 font-['koulen'] text-[14px] text-green-400 outline-none focus:border-green-500/50 w-full" />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Precio en pesos */}
+                            <div className="flex flex-col gap-1 flex-1 min-w-[100px]">
+                                <label className="font-['koulen'] text-[11px] text-white/30">
+                                    {isVapes ? "PESOS (auto)" : "PRECIO UNIT."}
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 font-['koulen'] text-[12px] text-white/30">$</span>
+                                    <input type="number" min="0" value={item.unitPrice}
+                                        onChange={e => updateItem(i, 'unitPrice', e.target.value)}
+                                        className={`bg-[#1E1E2E] border rounded-xl h-[38px] pl-6 pr-2 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full
+                                            ${isVapes ? "border-white/5 text-white/60" : "border-white/10"}`} />
+                                </div>
                             </div>
+
                             {/* Subtotal */}
                             <div className="flex flex-col gap-1 items-end justify-end shrink-0">
                                 <label className="font-['koulen'] text-[11px] text-white/30">SUBTOTAL</label>
@@ -258,21 +349,40 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
                                         : "—"}
                                 </span>
                             </div>
+
                             {/* Eliminar */}
                             <button onClick={() => removeItem(i)}
                                 className="font-['koulen'] text-[16px] text-red-400 hover:text-red-300 self-end h-[38px] px-1">✕</button>
                         </div>
+
+                        {/* Subtotal en USD para vapes */}
+                        {isVapes && item.priceUsd && item.quantity && (
+                            <div className="flex justify-end">
+                                <span className="font-['koulen'] text-[11px] text-green-400/60">
+                                    = U${(Number(item.priceUsd) * Number(item.quantity)).toLocaleString("es-AR")}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 ))}
 
                 <Btn small color="ghost" onClick={addItem}>+ AGREGAR ITEM</Btn>
             </div>
 
-            {/* Total */}
+            {/* Totales */}
             {items.length > 0 && (
-                <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
-                    <span className="font-['koulen'] text-[16px] text-white/50">TOTAL COMPRA</span>
-                    <span className="font-['koulen'] text-[22px] text-[#00FF1E]">{fmt(total)}</span>
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
+                        <span className="font-['koulen'] text-[16px] text-white/50">TOTAL COMPRA</span>
+                        <div className="flex items-center gap-4">
+                            {isVapes && totalUsd > 0 && (
+                                <span className="font-['koulen'] text-[14px] text-green-400">
+                                    U${totalUsd.toLocaleString("es-AR")}
+                                </span>
+                            )}
+                            <span className="font-['koulen'] text-[22px] text-[#00FF1E]">{fmt(total)}</span>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -292,6 +402,18 @@ const LotRow = ({ lot }) => (
     <div className="flex items-center justify-between px-3 py-2 bg-white/[0.02] rounded-lg">
         <span className="font-['koulen'] text-[12px] text-white/30">{fmtDate(lot.createdAt)}</span>
         <div className="flex items-center gap-4">
+            {lot.priceUsd != null && (
+                <div className="text-right">
+                    <p className="font-['koulen'] text-[10px] text-white/20">USD</p>
+                    <p className="font-['koulen'] text-[13px] text-green-400">U${lot.priceUsd}</p>
+                </div>
+            )}
+            {lot.exchangeRate != null && (
+                <div className="text-right">
+                    <p className="font-['koulen'] text-[10px] text-white/20">TC</p>
+                    <p className="font-['koulen'] text-[13px] text-white/40">{fmt(lot.exchangeRate)}</p>
+                </div>
+            )}
             <div className="text-right">
                 <p className="font-['koulen'] text-[10px] text-white/20">INICIAL</p>
                 <p className="font-['koulen'] text-[13px] text-white/50">{lot.initialQuantity}</p>
@@ -320,7 +442,12 @@ const VariantRow = ({ variant, productName, onAjuste }) => {
                         className="font-['koulen'] text-[13px] text-white/30 hover:text-white/60 transition-colors">
                         {showLots ? "▼" : "▶"} LOTES
                     </button>
-                    <span className="font-['koulen'] text-[15px]">{variant.name}</span>
+                    <div className="flex flex-col">
+                        <span className="font-['koulen'] text-[15px]">{variant.name}</span>
+                        {variant.description && (
+                            <span className="font-['koulen'] text-[11px] text-white/30 italic">{variant.description}</span>
+                        )}
+                    </div>
                     {!variant.isActive && (
                         <span className="font-['koulen'] text-[11px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">INACTIVA</span>
                     )}
@@ -330,6 +457,14 @@ const VariantRow = ({ variant, productName, onAjuste }) => {
                         <p className="font-['koulen'] text-[10px] text-white/30">ÚLT. COMPRA</p>
                         <p className="font-['koulen'] text-[13px] text-white/60">{fmt(variant.lastPurchasePrice)}</p>
                     </div>
+                    {variant.lastPriceUsd && (
+                        <div className="text-right">
+                            <p className="font-['koulen'] text-[10px] text-white/30">USD</p>
+                            <p className="font-['koulen'] text-[13px] text-green-400">
+                                U${variant.lastPriceUsd}
+                            </p>
+                        </div>
+                    )}
                     <div className="text-right">
                         <p className="font-['koulen'] text-[10px] text-white/30">STOCK</p>
                         <p className={`font-['koulen'] text-[18px] ${variant.stock === 0 ? "text-red-400" : variant.stock <= 4 ? "text-yellow-400" : "text-white"}`}>
@@ -340,7 +475,6 @@ const VariantRow = ({ variant, productName, onAjuste }) => {
                 </div>
             </div>
 
-            {/* Lotes */}
             {showLots && (
                 <div className="flex flex-col gap-1 pl-4">
                     {variant.lots.length === 0
@@ -425,7 +559,6 @@ const AdminStock = () => {
     useEffect(() => { fetchData() }, [rubro])
 
     const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
-
     const grouped = filtered.reduce((acc, p) => {
         const cat = p.category ?? "Sin categoría"
         if (!acc[cat]) acc[cat] = []
@@ -470,8 +603,7 @@ const AdminStock = () => {
                                 <div className="flex-1 border-b border-white/10" />
                             </div>
                             {prods.map(p => (
-                                <ProductRow key={p.id} product={p}
-                                    onAjuste={(v) => handleAjuste(v, p.name)} />
+                                <ProductRow key={p.id} product={p} onAjuste={(v) => handleAjuste(v, p.name)} />
                             ))}
                         </div>
                     ))}
@@ -482,23 +614,16 @@ const AdminStock = () => {
             )}
 
             {ajusteVariant && (
-                <AjusteModal
-                    variant={ajusteVariant}
-                    productName={ajusteProductName}
+                <AjusteModal variant={ajusteVariant} productName={ajusteProductName}
                     onClose={() => setAjusteVariant(null)}
-                    onSaved={() => { setAjusteVariant(null); fetchData() }}
-                />
+                    onSaved={() => { setAjusteVariant(null); fetchData() }} />
             )}
 
             {showCompra && (
-                <NuevaCompraModal
-                    rubro={rubro}
-                    products={products}
-                    suppliers={suppliers}
+                <NuevaCompraModal rubro={rubro} products={products} suppliers={suppliers}
                     onNewSupplier={fetchSuppliers}
                     onClose={() => setShowCompra(false)}
-                    onSaved={() => { setShowCompra(false); fetchData() }}
-                />
+                    onSaved={() => { setShowCompra(false); fetchData() }} />
             )}
         </div>
     )

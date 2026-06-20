@@ -1,25 +1,27 @@
 import { useState, useEffect, useRef } from "react"
 import api from "../api/axios"
+import TicketVenta from "./TicketVenta"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
 const fmt = (n) => n != null ? `$${Number(n).toLocaleString("es-AR")}` : "—"
+const fmtUsd = (n) => n != null ? `U$${Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"
 const fmtTime = (d) => d ? new Date(d).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : null
 const fmtDateTime = (d) => d ? `${fmtDate(d)} ${fmtTime(d)}` : "—"
 const todayISO = () => new Date().toISOString().split("T")[0]
 
 const STATUS_LABELS = {
-    pending:   { label: "PENDIENTE",  color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20" },
-    paid:      { label: "PAGADO",     color: "text-blue-400",   bg: "bg-blue-400/10 border-blue-400/20" },
-    shipping:  { label: "EN CAMINO",  color: "text-[#C32CFF]",  bg: "bg-[#C32CFF]/10 border-[#C32CFF]/20" },
-    delivered: { label: "ENTREGADO",  color: "text-green-400",  bg: "bg-green-400/10 border-green-400/20" },
-    cancelled: { label: "CANCELADO",  color: "text-red-400",    bg: "bg-red-400/10 border-red-400/20" },
+    pending: { label: "PENDIENTE", color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20" },
+    paid: { label: "PAGADO", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20" },
+    shipping: { label: "EN CAMINO", color: "text-[#C32CFF]", bg: "bg-[#C32CFF]/10 border-[#C32CFF]/20" },
+    delivered: { label: "ENTREGADO", color: "text-green-400", bg: "bg-green-400/10 border-green-400/20" },
+    cancelled: { label: "CANCELADO", color: "text-red-400", bg: "bg-red-400/10 border-red-400/20" },
 }
 
 const NEXT_STATUS = {
-    pending:  ["paid", "shipping", "delivered", "cancelled"],
-    paid:     ["shipping", "delivered", "cancelled"],
+    pending: ["paid", "shipping", "delivered", "cancelled"],
+    paid: ["shipping", "delivered", "cancelled"],
     shipping: ["delivered", "cancelled"],
 }
 
@@ -27,9 +29,9 @@ const NEXT_STATUS = {
 const Btn = ({ onClick, children, color = "purple", small = false, disabled = false }) => {
     const colors = {
         purple: "bg-[#C32CFF] hover:bg-[#d444ff] text-white",
-        green:  "bg-green-600 hover:bg-green-500 text-white",
-        ghost:  "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10",
-        red:    "bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30",
+        green: "bg-green-600 hover:bg-green-500 text-white",
+        ghost: "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10",
+        red: "bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30",
     }
     return (
         <button onClick={onClick} disabled={disabled}
@@ -50,6 +52,16 @@ const Input = ({ label, value, onChange, type = "text", placeholder = "", min })
     </div>
 )
 
+const Toggle = ({ label, value, onChange, accent = false }) => (
+    <div className="flex items-center gap-3">
+        <label className="font-['koulen'] text-[14px] text-white/60">{label}</label>
+        <button onClick={() => onChange(!value)}
+            className={`w-12 h-6 rounded-full transition-colors ${value ? (accent ? "bg-green-500" : "bg-[#C32CFF]") : "bg-white/20"}`}>
+            <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-0.5 ${value ? "translate-x-6" : "translate-x-0"}`} />
+        </button>
+    </div>
+)
+
 const Modal = ({ title, onClose, children, wide = false }) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
         <div className={`bg-[#0A0A14] border border-white/10 rounded-3xl p-6 w-[90vw] ${wide ? "max-w-[680px]" : "max-w-[480px]"} max-h-[90vh] overflow-y-auto flex flex-col gap-5`}
@@ -64,7 +76,7 @@ const Modal = ({ title, onClose, children, wide = false }) => (
 )
 
 // ─── Editor de pagos ──────────────────────────────────────────────────────────
-const PaymentsEditor = ({ payments, onChange, totalRef }) => {
+const PaymentsEditor = ({ payments, onChange }) => {
     const addPayment = () => onChange([...payments, { method: "cash", amount: "" }])
     const remove = (i) => onChange(payments.filter((_, idx) => idx !== i))
     const update = (i, field, value) =>
@@ -120,7 +132,6 @@ const CancelModal = ({ saleId, onClose, onSaved }) => {
     )
 }
 
-// ─── Modal envío ──────────────────────────────────────────────────────────────
 const ShippingModal = ({ sale, onClose, onSaved }) => {
     const [price, setPrice] = useState(String(sale.shippingPrice || ""))
     const [loading, setLoading] = useState(false)
@@ -145,7 +156,6 @@ const ShippingModal = ({ sale, onClose, onSaved }) => {
     )
 }
 
-// ─── Modal editar venta (total + pagos) ───────────────────────────────────────
 const EditSaleModal = ({ sale, onClose, onSaved }) => {
     const [total, setTotal] = useState(String(sale.total))
     const [payments, setPayments] = useState(
@@ -185,16 +195,13 @@ const EditSaleModal = ({ sale, onClose, onSaved }) => {
                     </p>
                 )}
             </div>
-
             <PaymentsEditor payments={payments} onChange={setPayments} />
-
             {Math.abs(diff) > 0.5 && (
                 <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2">
                     <span className="font-['koulen'] text-[13px] text-white/50">DIFERENCIA PAGO / TOTAL</span>
                     <span className="font-['koulen'] text-[15px] text-yellow-400">{fmt(Math.abs(diff))}</span>
                 </div>
             )}
-
             {error && <p className="font-['koulen'] text-[13px] text-red-400">{error}</p>}
             <div className="flex gap-3 justify-end">
                 <Btn color="ghost" onClick={onClose}>CANCELAR</Btn>
@@ -204,18 +211,26 @@ const EditSaleModal = ({ sale, onClose, onSaved }) => {
     )
 }
 
-// ─── Modal nueva venta ────────────────────────────────────────────────────────
+// ─── Modal nueva venta — con mayorista + TC para vapes ───────────────────────
 const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
+    const isVapes = rubro === 'vapes'
+
     const [clientName, setClientName] = useState("")
     const [clientPhone, setClientPhone] = useState("")
     const [location, setLocation] = useState("")
     const [shippingPrice, setShippingPrice] = useState("")
+    const [isWholesale, setIsWholesale] = useState(false)
+    const [exchangeRate, setExchangeRate] = useState("")
     const [items, setItems] = useState([])
     const [payments, setPayments] = useState([{ method: "cash", amount: "" }])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
 
-    const addItem = () => setItems(prev => [...prev, { variantId: "", quantity: 1, unitPrice: "", stock: null }])
+    const showUsd = isVapes && isWholesale
+
+    const addItem = () => setItems(prev => [...prev, {
+        variantId: "", quantity: 1, unitPrice: "", priceUsd: "", stock: null
+    }])
     const removeItem = (i) => setItems(prev => prev.filter((_, idx) => idx !== i))
 
     const updateVariant = (i, variantId) => {
@@ -225,15 +240,45 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
             const v = p.variants.find(v => v.id === Number(variantId))
             if (v) { salePrice = String(p.salePrice); stock = v.stock; break }
         }
+        // si es mayorista USD, el unitPrice lo calcula del USD × TC
+        const tc = Number(exchangeRate) || 0
         setItems(prev => prev.map((item, idx) => idx !== i ? item : {
-            ...item, variantId: Number(variantId), unitPrice: salePrice, stock
+            ...item, variantId: Number(variantId),
+            unitPrice: showUsd && item.priceUsd && tc
+                ? String(Math.round(Number(item.priceUsd) * tc * 100) / 100)
+                : salePrice,
+            stock
         }))
     }
 
-    const updateItem = (i, field, value) =>
-        setItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
+    const updateItem = (i, field, value) => {
+        setItems(prev => prev.map((item, idx) => {
+            if (idx !== i) return item
+            const updated = { ...item, [field]: value }
+            // si cambia priceUsd en modo mayorista, recalcular unitPrice
+            if (showUsd && field === 'priceUsd' && exchangeRate) {
+                const tc = Number(exchangeRate) || 0
+                const usd = Number(value) || 0
+                if (tc > 0 && usd > 0) updated.unitPrice = String(Math.round(usd * tc * 100) / 100)
+            }
+            return updated
+        }))
+    }
+
+    // cuando cambia TC, recalcular todos los unitPrice de items con priceUsd
+    const handleTCChange = (val) => {
+        setExchangeRate(val)
+        if (!showUsd) return
+        const tc = Number(val) || 0
+        setItems(prev => prev.map(item => {
+            const usd = Number(item.priceUsd) || 0
+            if (usd === 0 || tc === 0) return item
+            return { ...item, unitPrice: String(Math.round(usd * tc * 100) / 100) }
+        }))
+    }
 
     const subtotal = items.reduce((acc, i) => acc + (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0), 0)
+    const subtotalUsd = showUsd ? items.reduce((acc, i) => acc + (Number(i.quantity) || 0) * (Number(i.priceUsd) || 0), 0) : 0
     const total = subtotal + Number(shippingPrice || 0)
     const paymentsTotal = payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0)
     const paymentsDiff = total - paymentsTotal
@@ -242,6 +287,7 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
         if (items.length === 0) { setError("Agregá al menos un producto"); return }
         if (items.some(i => !i.variantId || !i.quantity || !i.unitPrice)) { setError("Completá todos los items"); return }
         if (payments.some(p => !p.amount || Number(p.amount) <= 0)) { setError("Completá los montos de pago"); return }
+        if (showUsd && !exchangeRate) { setError("Ingresá el tipo de cambio para venta mayorista"); return }
         setLoading(true); setError("")
         try {
             await api.post('/admin/sales', {
@@ -249,6 +295,8 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                 clientPhone: clientPhone || null,
                 location: location || null,
                 rubro,
+                isWholesale,
+                exchangeRate: showUsd ? Number(exchangeRate) : null,
                 shippingPrice: Number(shippingPrice || 0),
                 discountAmount: 0,
                 items: items.map(i => ({
@@ -267,6 +315,7 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
 
     return (
         <Modal title="NUEVA VENTA" onClose={onClose} wide>
+            {/* Cliente */}
             <div className="flex flex-col gap-2">
                 <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">CLIENTE (opcional)</label>
                 <div className="flex gap-3">
@@ -276,6 +325,35 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                 <Input placeholder="Dirección" value={location} onChange={setLocation} />
             </div>
 
+            {/* Toggle mayorista — solo vapes */}
+            {isVapes && (
+                <div className={`flex flex-col gap-3 rounded-2xl px-4 py-3 border transition-colors
+                    ${isWholesale ? "bg-green-500/5 border-green-500/20" : "bg-white/[0.03] border-white/10"}`}>
+                    <Toggle label="VENTA MAYORISTA (USD)" value={isWholesale} onChange={setIsWholesale} accent />
+
+                    {isWholesale && (
+                        <div className="flex flex-col gap-1">
+                            <label className="font-['koulen'] text-[11px] text-white/40 tracking-wider">TIPO DE CAMBIO</label>
+                            <div className="flex items-center gap-3">
+                                <div className="relative flex-1">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-['koulen'] text-[13px] text-white/30">$</span>
+                                    <input type="number" min="0" step="1" value={exchangeRate}
+                                        onChange={e => handleTCChange(e.target.value)}
+                                        placeholder="Ej: 1500"
+                                        className="bg-[#1E1E2E] border border-green-500/30 rounded-xl h-[40px] pl-7 pr-4 font-['koulen'] text-[15px] text-white outline-none focus:border-green-500/60 transition-colors w-full" />
+                                </div>
+                                {exchangeRate && (
+                                    <span className="font-['koulen'] text-[12px] text-green-400/60 shrink-0">
+                                        1 USD = {fmt(Number(exchangeRate))}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Items */}
             <div className="flex flex-col gap-3">
                 <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">PRODUCTOS</label>
                 {items.map((item, i) => (
@@ -284,13 +362,28 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                             <select value={item.variantId} onChange={e => updateVariant(i, e.target.value)}
                                 className="flex-1 bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60">
                                 <option value="">— elegir producto/variante —</option>
-                                {products.map(p => (
-                                    <optgroup key={p.id} label={p.name}>
-                                        {p.variants.filter(v => v.isActive).map(v => (
-                                            <option key={v.id} value={v.id}>{p.name} — {v.name}</option>
-                                        ))}
-                                    </optgroup>
-                                ))}
+                                {(() => {
+                                    const grouped = products.reduce((acc, p) => {
+                                        const cat = p.category ?? "Sin categoría"
+                                        const variants = p.variants.filter(v => v.isActive && v.stock > 0)
+                                        if (variants.length === 0) return acc
+                                        if (!acc[cat]) acc[cat] = []
+                                        acc[cat].push({ p, variants })
+                                        return acc
+                                    }, {})
+
+                                    return Object.entries(grouped).map(([cat, items]) => (
+                                        <optgroup key={cat} label={`── ${cat.toUpperCase()} ──`}>
+                                            {items.map(({ p, variants }) =>
+                                                variants.map(v => (
+                                                    <option key={v.id} value={v.id}>
+                                                        {v.stock} {p.name} — {v.name}{v.description ? ` (${v.description})` : ""}
+                                                    </option>
+                                                ))
+                                            )}
+                                        </optgroup>
+                                    ))
+                                })()}
                             </select>
                             {item.stock != null && (
                                 <span className={`font-['koulen'] text-[13px] shrink-0 ${item.stock === 0 ? "text-red-400" : item.stock <= 5 ? "text-yellow-400" : "text-green-400"}`}>
@@ -300,19 +393,40 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                             <button onClick={() => removeItem(i)}
                                 className="font-['koulen'] text-[16px] text-red-400 hover:text-red-300 px-1 shrink-0">✕</button>
                         </div>
-                        <div className="flex gap-2">
-                            <div className="flex flex-col gap-1 flex-1">
-                                <label className="font-['koulen'] text-[11px] text-white/30">CANTIDAD</label>
+                        <div className="flex gap-2 flex-wrap">
+                            <div className="flex flex-col gap-1 w-[70px]">
+                                <label className="font-['koulen'] text-[11px] text-white/30">CANT.</label>
                                 <input type="number" min="1" value={item.quantity}
                                     onChange={e => updateItem(i, 'quantity', e.target.value)}
                                     className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full" />
                             </div>
-                            <div className="flex flex-col gap-1 flex-1">
-                                <label className="font-['koulen'] text-[11px] text-white/30">PRECIO UNIT.</label>
-                                <input type="number" min="0" value={item.unitPrice}
-                                    onChange={e => updateItem(i, 'unitPrice', e.target.value)}
-                                    className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full" />
+
+                            {/* Campo USD — solo mayorista vapes */}
+                            {showUsd && (
+                                <div className="flex flex-col gap-1 flex-1 min-w-[90px]">
+                                    <label className="font-['koulen'] text-[11px] text-green-400/60">PRECIO USD</label>
+                                    <div className="relative">
+                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 font-['koulen'] text-[12px] text-green-400/50">U$</span>
+                                        <input type="number" min="0" step="0.5" value={item.priceUsd}
+                                            onChange={e => updateItem(i, 'priceUsd', e.target.value)}
+                                            className="bg-[#1E1E2E] border border-green-500/20 rounded-xl h-[38px] pl-7 pr-2 font-['koulen'] text-[14px] text-green-400 outline-none focus:border-green-500/50 w-full" />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex flex-col gap-1 flex-1 min-w-[100px]">
+                                <label className="font-['koulen'] text-[11px] text-white/30">
+                                    {showUsd ? "PRECIO PESOS (auto)" : "PRECIO UNIT."}
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 font-['koulen'] text-[12px] text-white/30">$</span>
+                                    <input type="number" min="0" value={item.unitPrice}
+                                        onChange={e => updateItem(i, 'unitPrice', e.target.value)}
+                                        className={`bg-[#1E1E2E] border rounded-xl h-[38px] pl-6 pr-2 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full
+                                            ${showUsd ? "border-white/5 text-white/50" : "border-white/10"}`} />
+                                </div>
                             </div>
+
                             <div className="flex flex-col gap-1 items-end justify-end shrink-0">
                                 <label className="font-['koulen'] text-[11px] text-white/30">SUBTOTAL</label>
                                 <span className="font-['koulen'] text-[15px] text-white/70 h-[38px] flex items-center">
@@ -320,6 +434,14 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                                 </span>
                             </div>
                         </div>
+
+                        {showUsd && item.priceUsd && item.quantity && (
+                            <div className="flex justify-end">
+                                <span className="font-['koulen'] text-[11px] text-green-400/50">
+                                    = {fmtUsd(Number(item.priceUsd) * Number(item.quantity))}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 ))}
                 <Btn small color="ghost" onClick={addItem}>+ AGREGAR ITEM</Btn>
@@ -332,7 +454,12 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2">
                         <span className="font-['koulen'] text-[14px] text-white/50">TOTAL</span>
-                        <span className="font-['koulen'] text-[20px] text-[#00FF1E]">{fmt(total)}</span>
+                        <div className="flex items-center gap-3">
+                            {showUsd && subtotalUsd > 0 && (
+                                <span className="font-['koulen'] text-[14px] text-green-400">{fmtUsd(subtotalUsd)}</span>
+                            )}
+                            <span className="font-['koulen'] text-[20px] text-[#00FF1E]">{fmt(total)}</span>
+                        </div>
                     </div>
                     {Math.abs(paymentsDiff) > 0.5 && (
                         <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2">
@@ -360,6 +487,7 @@ const SaleCard = ({ sale, onRefresh }) => {
     const [showShipping, setShowShipping] = useState(false)
     const [showEdit, setShowEdit] = useState(false)
     const [loadingStatus, setLoadingStatus] = useState(null)
+    const [showTicket, setShowTicket] = useState(false)
 
     const statusInfo = STATUS_LABELS[sale.status]
     const nextStatuses = NEXT_STATUS[sale.status] ?? []
@@ -385,13 +513,20 @@ const SaleCard = ({ sale, onRefresh }) => {
                     <span className={`font-['koulen'] text-[13px] px-3 py-1 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
                         {statusInfo.label}
                     </span>
+                    {sale.isWholesale && (
+                        <span className="font-['koulen'] text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">MAYORISTA</span>
+                    )}
                     <span className="font-['koulen'] text-[13px] text-white/30">#{sale.id}</span>
                     <span className="font-['koulen'] text-[13px] text-white/30">{fmtDateTime(sale.createdAt)}</span>
                 </div>
-                <span className="font-['koulen'] text-[20px] text-[#00FF1E]">{fmt(sale.total)}</span>
+                <div className="flex items-center gap-3">
+                    {sale.exchangeRate && (
+                        <span className="font-['koulen'] text-[12px] text-green-400/60">TC: {fmt(sale.exchangeRate)}</span>
+                    )}
+                    <span className="font-['koulen'] text-[20px] text-[#00FF1E]">{fmt(sale.total)}</span>
+                </div>
             </div>
 
-            {/* Cliente + dirección */}
             <div className="px-5 py-3 flex flex-col gap-1">
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-['koulen'] text-[16px]">{sale.clientName ?? "Sin cliente"}</span>
@@ -407,7 +542,6 @@ const SaleCard = ({ sale, onRefresh }) => {
                 )}
             </div>
 
-            {/* Items */}
             <div className="px-5 pb-2 flex flex-col gap-1">
                 {sale.items.map(item => (
                     <div key={item.id} className="flex items-center justify-between">
@@ -430,7 +564,6 @@ const SaleCard = ({ sale, onRefresh }) => {
                 )}
             </div>
 
-            {/* Métricas */}
             <div className="px-5 pb-3 flex gap-4 flex-wrap">
                 <div>
                     <p className="font-['koulen'] text-[10px] text-white/30">COSTO</p>
@@ -446,6 +579,17 @@ const SaleCard = ({ sale, onRefresh }) => {
                     <p className="font-['koulen'] text-[10px] text-white/30">PAGO</p>
                     <p className="font-['koulen'] text-[13px] text-white/60">{paymentText || "—"}</p>
                 </div>
+                {sale.discountAmount > 0 && (
+                    <div>
+                        <p className="font-['koulen'] text-[10px] text-white/30">DESCUENTO</p>
+                        <p className="font-['koulen'] text-[13px] text-yellow-400">
+                            {sale.discountCode && (
+                                <span className="text-white/40 mr-1">{sale.discountCode}</span>
+                            )}
+                            -{fmt(sale.discountAmount)}
+                        </p>
+                    </div>
+                )}
                 {sale.departureAt && (
                     <div>
                         <p className="font-['koulen'] text-[10px] text-white/30">SALIDA</p>
@@ -460,6 +604,7 @@ const SaleCard = ({ sale, onRefresh }) => {
                         {sale.shippingPrice > 0 ? `ENVÍO: ${fmt(sale.shippingPrice)}` : "+ ENVÍO"}
                     </Btn>
                     <Btn small color="ghost" onClick={() => setShowEdit(true)}>EDITAR</Btn>
+                    <Btn small color="ghost" onClick={() => setShowTicket(true)}>🖨️ TICKET</Btn>
                     {nextStatuses.map(s => (
                         <Btn key={s} small
                             color={s === "cancelled" ? "red" : s === "delivered" ? "green" : "purple"}
@@ -471,12 +616,10 @@ const SaleCard = ({ sale, onRefresh }) => {
                 </div>
             )}
 
-            {showCancel && <CancelModal saleId={sale.id} onClose={() => setShowCancel(false)}
-                onSaved={() => { setShowCancel(false); onRefresh() }} />}
-            {showShipping && <ShippingModal sale={sale} onClose={() => setShowShipping(false)}
-                onSaved={() => { setShowShipping(false); onRefresh() }} />}
-            {showEdit && <EditSaleModal sale={sale} onClose={() => setShowEdit(false)}
-                onSaved={() => { setShowEdit(false); onRefresh() }} />}
+            {showCancel && <CancelModal saleId={sale.id} onClose={() => setShowCancel(false)} onSaved={() => { setShowCancel(false); onRefresh() }} />}
+            {showShipping && <ShippingModal sale={sale} onClose={() => setShowShipping(false)} onSaved={() => { setShowShipping(false); onRefresh() }} />}
+            {showEdit && <EditSaleModal sale={sale} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); onRefresh() }} />}
+            {showTicket && <TicketVenta sale={sale} onClose={() => setShowTicket(false)} />}
         </div>
     )
 }
@@ -484,6 +627,7 @@ const SaleCard = ({ sale, onRefresh }) => {
 // ─── Fila historial ───────────────────────────────────────────────────────────
 const HistoryRow = ({ sale }) => {
     const [open, setOpen] = useState(false)
+    const [showTicket, setShowTicket] = useState(false)
     const statusInfo = STATUS_LABELS[sale.status]
     const isCancelled = sale.status === 'cancelled'
 
@@ -494,8 +638,16 @@ const HistoryRow = ({ sale }) => {
                 <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-['koulen'] text-[13px] text-white/30">#{sale.id}</span>
                     <span className={`font-['koulen'] text-[13px] ${statusInfo.color}`}>{statusInfo.label}</span>
+                    {sale.isWholesale && (
+                        <span className="font-['koulen'] text-[11px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">MAYORISTA</span>
+                    )}
                     <span className="font-['koulen'] text-[14px]">{sale.clientName ?? "Sin cliente"}</span>
                     <span className="font-['koulen'] text-[13px] text-white/40">{fmtDate(sale.createdAt)}</span>
+                    <button onClick={e => { e.stopPropagation(); setShowTicket(true) }}
+                        className="font-['koulen'] text-[12px] text-white/30 hover:text-white px-2">
+                        🖨️
+                    </button>
+                    {showTicket && <TicketVenta sale={sale} onClose={() => setShowTicket(false)} />}
                 </div>
                 <div className="flex items-center gap-4">
                     {!isCancelled && (
@@ -523,15 +675,19 @@ const HistoryRow = ({ sale }) => {
                             <div>
                                 <p className="font-['koulen'] text-[10px] text-white/30">TELÉFONO</p>
                                 <a href={`https://wa.me/${sale.clientPhone}`} target="_blank" rel="noreferrer"
-                                    className="font-['koulen'] text-[13px] text-green-400 hover:underline">
-                                    {sale.clientPhone}
-                                </a>
+                                    className="font-['koulen'] text-[13px] text-green-400 hover:underline">{sale.clientPhone}</a>
                             </div>
                         )}
                         {sale.location && (
                             <div>
                                 <p className="font-['koulen'] text-[10px] text-white/30">DIRECCIÓN</p>
                                 <p className="font-['koulen'] text-[13px] text-white/70">{sale.location}</p>
+                            </div>
+                        )}
+                        {sale.exchangeRate && (
+                            <div>
+                                <p className="font-['koulen'] text-[10px] text-white/30">TIPO DE CAMBIO</p>
+                                <p className="font-['koulen'] text-[13px] text-green-400">{fmt(sale.exchangeRate)}</p>
                             </div>
                         )}
                         {sale.departureAt && (
@@ -622,7 +778,6 @@ const AdminVentas = () => {
     const [loading, setLoading] = useState(false)
     const [showNueva, setShowNueva] = useState(false)
 
-    // polling — ref para no re-crear el intervalo en cada render
     const pollingRef = useRef(null)
     const rubroRef = useRef(rubro)
     rubroRef.current = rubro
@@ -648,16 +803,32 @@ const AdminVentas = () => {
         finally { setLoading(false) }
     }
 
-    // arrancar polling al montar, parar al desmontar
     useEffect(() => {
-        api.get(`/admin/products?rubro=${rubro}`, authHeaders()).then(r => setProducts(r.data))
+        // cargar productos con stock mergeado
+        Promise.all([
+            api.get(`/admin/products?rubro=${rubro}`, authHeaders()),
+            api.get(`/admin/stock?rubro=${rubro}`, authHeaders()),
+        ]).then(([prodRes, stockRes]) => {
+            const stockMap = {}
+            stockRes.data.forEach(p => {
+                p.variants.forEach(v => {
+                    stockMap[v.id] = v.stock
+                })
+            })
+            const merged = prodRes.data.map(p => ({
+                ...p,
+                variants: p.variants.map(v => ({
+                    ...v,
+                    stock: stockMap[v.id] ?? 0
+                }))
+            }))
+            setProducts(merged)
+        })
+
+        // 👇 esto también tiene que estar
         fetchInProcess()
 
-        // polling cada 20 segundos, silencioso (no muestra "CARGANDO")
-        pollingRef.current = setInterval(() => {
-            fetchInProcess(true)
-        }, 20000)
-
+        pollingRef.current = setInterval(() => fetchInProcess(true), 20000)
         return () => clearInterval(pollingRef.current)
     }, [rubro])
 
@@ -667,7 +838,6 @@ const AdminVentas = () => {
 
     const totalEnProceso = inProcess.reduce((acc, s) => acc + s.total, 0)
     const gananciaEnProceso = inProcess.reduce((acc, s) => acc + s.gainTotal, 0)
-
     const historialEntregadas = history.filter(s => s.status === 'delivered')
     const totalHistorial = historialEntregadas.reduce((acc, s) => acc + s.total, 0)
     const gananciaHistorial = historialEntregadas.reduce((acc, s) => acc + s.gainTotal, 0)

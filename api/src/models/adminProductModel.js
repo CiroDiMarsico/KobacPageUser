@@ -14,13 +14,32 @@ const getAll = async (rubro) => {
             v.name        AS variantName,
             v.is_active   AS variantActive,
             v.stock,
+            v.description AS variantDescription,
             (
                 SELECT l.purchase_price
                 FROM lots l
                 WHERE l.variant_id = v.id
                 ORDER BY l.created_at DESC
                 LIMIT 1
-            ) AS lastPurchasePrice
+            ) AS lastPurchasePrice,
+            (
+                SELECT pi.price_usd
+                FROM lots l
+                JOIN purchase_items pi ON pi.id = l.purchase_item_id
+                WHERE l.variant_id = v.id
+                AND pi.price_usd IS NOT NULL
+                ORDER BY l.created_at DESC
+                LIMIT 1
+            ) AS lastPriceUsd,
+            (
+                SELECT pi.exchange_rate
+                FROM lots l
+                JOIN purchase_items pi ON pi.id = l.purchase_item_id
+                WHERE l.variant_id = v.id
+                AND pi.exchange_rate IS NOT NULL
+                ORDER BY l.created_at DESC
+                LIMIT 1
+            ) AS lastExchangeRate
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
         LEFT JOIN categories root ON root.id = c.parent_id
@@ -68,6 +87,9 @@ const getAll = async (rubro) => {
                 ganancia: ganancia,
                 markup: markup ? Number(markup) : null,   // % sobre costo
                 margen: margen ? Number(margen) : null,   // % sobre venta
+                description: row.variantDescription ?? null,
+                lastPriceUsd: row.lastPriceUsd ? Number(row.lastPriceUsd) : null,
+                lastExchangeRate: row.lastExchangeRate ? Number(row.lastExchangeRate) : null,
             })
         }
     }
@@ -110,21 +132,20 @@ const update = async (id, { name, categoryId, image, salePrice }) => {
 }
 
 // ─── CREATE VARIANT ───────────────────────────────────────────────────────────
-const createVariant = async (productId, { name }) => {
+const createVariant = async (productId, { name, description }) => {
     const [result] = await pool.query(`
-        INSERT INTO variants (product_id, name)
-        VALUES (?, ?)
-    `, [productId, name])
+        INSERT INTO variants (product_id, name, description)
+        VALUES (?, ?, ?)
+    `, [productId, name, description ?? null])
     return result.insertId
 }
 
 // ─── UPDATE VARIANT ───────────────────────────────────────────────────────────
-const updateVariant = async (id, { name, isActive }) => {
+const updateVariant = async (id, { name, isActive, description }) => {
     await pool.query(`
-        UPDATE variants
-        SET name = ?, is_active = ?
+        UPDATE variants SET name = ?, is_active = ?, description = ?
         WHERE id = ?
-    `, [name, isActive ?? true, id])
+    `, [name, isActive ?? true, description ?? null, id])
 }
 
 // ─── CREATE CATEGORY ──────────────────────────────────────────────────────────

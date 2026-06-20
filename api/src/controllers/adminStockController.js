@@ -35,7 +35,7 @@ const createSupplier = async (req, res) => {
 
 const createPurchase = async (req, res) => {
     try {
-        const { supplierId, rubro, items } = req.body
+        const { supplierId, rubro, items, exchangeRate } = req.body
         if (!items || items.length === 0)
             return res.status(400).json({ error: 'La compra debe tener al menos un item' })
         if (items.some(i => !i.variantId || !i.quantity || !i.unitPrice))

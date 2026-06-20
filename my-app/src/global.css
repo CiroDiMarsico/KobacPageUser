@@ -10,7 +10,7 @@ html, body {
 }
 /*marquee*/
 .animate-marquee {
-  animation: marquee 14s linear infinite;
+  animation: marquee 8s linear infinite;
 }
 
 /* animacion ingreso de pagina*/

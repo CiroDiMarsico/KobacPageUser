@@ -51,9 +51,9 @@ const update = async (req, res) => {
 const createVariant = async (req, res) => {
     try {
         const { id } = req.params
-        const { name } = req.body
+        const { name, description } = req.body
         if (!name) return res.status(400).json({ error: 'Nombre requerido' })
-        const variantId = await adminProductModel.createVariant(id, { name })
+        const variantId = await adminProductModel.createVariant(id, { name, description })
         res.status(201).json({ ok: true, id: variantId })
     } catch (error) {
         console.error(error)
@@ -64,8 +64,8 @@ const createVariant = async (req, res) => {
 const updateVariant = async (req, res) => {
     try {
         const { id } = req.params
-        const { name, isActive } = req.body
-        await adminProductModel.updateVariant(id, { name, isActive })
+        const { name, isActive, description } = req.body
+        await adminProductModel.updateVariant(id, { name, isActive, description })
         res.json({ ok: true })
     } catch (error) {
         console.error(error)

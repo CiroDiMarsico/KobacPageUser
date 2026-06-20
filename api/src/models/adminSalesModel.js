@@ -24,12 +24,15 @@ const buildSales = (rows) => {
             map[row.id] = {
                 id: row.id,
                 rubro: row.rubro,
+                isWholesale: Boolean(row.is_wholesale),
                 status: row.status,
                 cancelReason: row.cancel_reason,
                 total: Number(row.total),
                 shippingPrice: Number(row.shipping_price),
                 location: row.location,
                 discountAmount: Number(row.discount_amount),
+                discountCode: row.discount_code ?? null,
+                exchangeRate: row.exchange_rate ? Number(row.exchange_rate) : null,
                 weekCode: row.week_code,
                 createdAt: row.created_at,
                 updatedAt: row.updated_at,
@@ -58,6 +61,8 @@ const buildSales = (rows) => {
                 quantity: row.item_quantity,
                 unitPrice: Number(row.unit_price),
                 purchasePrice: Number(row.purchase_price ?? 0),
+                discountAmount: Number(row.discount_amount),
+                discountCode: row.discount_code ?? null,
             })
         }
     }
@@ -65,8 +70,8 @@ const buildSales = (rows) => {
     // ganancia = total venta (sin envío, sin descuento) - costo
     // el envío lo abona el cliente y se lo queda el cadete, no entra en ganancia
     sales.forEach(sale => {
-        sale.costTotal = sale.items.reduce((acc, i) => acc + i.purchasePrice * i.quantity, 0)
-        sale.gainTotal = sale.total - sale.costTotal - sale.discountAmount
+        sale.costTotal = sale.items.reduce((acc, i) => acc + i.purchasePrice, 0)
+        sale.gainTotal = sale.total - sale.costTotal
     })
 
     return sales
@@ -75,9 +80,12 @@ const buildSales = (rows) => {
 // ─── query base ───────────────────────────────────────────────────────────────
 const BASE_QUERY = `
     SELECT
-        s.id, s.rubro, s.status, s.cancel_reason, s.total,
+        s.id, s.rubro, s.is_wholesale, s.status, s.cancel_reason, s.total,
         s.shipping_price, s.location, s.discount_amount, s.week_code,
         s.created_at, s.updated_at, s.departure_at, s.arrived_at,
+        s.exchange_rate,
+        s.discount_amount,
+        dc.code AS discount_code,
         c.name  AS client_name,
         c.phone AS client_phone,
         si.id            AS item_id,
@@ -89,7 +97,7 @@ const BASE_QUERY = `
         p.name           AS product_name,
         pr.name          AS promo_name,
         (
-            SELECT SUM(sm.quantity * l.purchase_price) / SUM(sm.quantity)
+            SELECT COALESCE(SUM(sm.quantity * l.purchase_price), 0)
             FROM stock_movements sm
             JOIN lots l ON l.id = sm.lot_id
             WHERE sm.sale_item_id = si.id
@@ -102,6 +110,7 @@ const BASE_QUERY = `
     LEFT JOIN variants v ON v.id = si.variant_id
     LEFT JOIN products p ON p.id = v.product_id
     LEFT JOIN promos pr ON pr.id = si.promo_id
+    LEFT JOIN discount_codes dc ON dc.id = s.discount_code_id
 `
 
 const attachPayments = async (sales) => {
@@ -264,7 +273,8 @@ const updateSale = async (id, { itemPrices, payments, total }) => {
 }
 
 // ─── CREATE MANUAL ────────────────────────────────────────────────────────────
-const createManual = async ({ clientName, clientPhone, location, rubro, items, payments, shippingPrice, discountAmount }) => {
+// Asegurate que la función lo recibe:
+const createManual = async ({ clientName, clientPhone, location, rubro, items, payments, shippingPrice, discountAmount, isWholesale, exchangeRate }) => {
     const conn = await pool.getConnection()
     try {
         await conn.beginTransaction()
@@ -299,9 +309,9 @@ const createManual = async ({ clientName, clientPhone, location, rubro, items, p
         const weekCode = buildWeekCode()
 
         const [saleRes] = await conn.query(`
-            INSERT INTO sales (rubro, client_id, status, total, shipping_price, location, discount_amount, week_code)
-            VALUES (?, ?, 'pending', ?, ?, ?, ?, ?)
-        `, [rubro, clientId, total, shippingPrice || 0, location || null, discountAmount || 0, weekCode])
+            INSERT INTO sales (rubro, client_id, is_wholesale, status, total, shipping_price, location, discount_amount, week_code, exchange_rate)
+            VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
+        `, [rubro, clientId, isWholesale ? 1 : 0, total, shippingPrice || 0, location || null, discountAmount || 0, weekCode, exchangeRate ?? null])
 
         const saleId = saleRes.insertId
 

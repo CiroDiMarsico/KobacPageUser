@@ -196,7 +196,7 @@ const AdminDashboardGanancias = () => {
                                 <span key={h} className="font-['koulen'] text-[11px] text-white/30 tracking-wider">{h}</span>
                             ))}
                         </div>
-                        {[...chartData].reverse().slice(0, 10).map((row, i) => (
+                        {[...chartData].reverse().map((row, i) => (
                             <div key={i} className={`grid grid-cols-5 px-5 py-2.5 border-b border-white/5 hover:bg-white/[0.02] transition-colors ${i === 0 ? "bg-white/[0.03]" : ""}`}>
                                 <span className="font-['koulen'] text-[14px] text-white/60">{row.label}</span>
                                 <span className="font-['koulen'] text-[14px] text-[#C32CFF]">{fmt(row.ventas)}</span>

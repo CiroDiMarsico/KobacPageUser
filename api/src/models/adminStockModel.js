@@ -12,7 +12,33 @@ const getStock = async (rubro) => {
             v.id        AS variantId,
             v.name      AS variantName,
             v.is_active AS variantActive,
-            v.stock
+            v.stock,
+            v.description AS variantDescription,
+            (
+                SELECT l.purchase_price
+                FROM lots l
+                WHERE l.variant_id = v.id
+                ORDER BY l.created_at DESC
+                LIMIT 1
+            ) AS lastPurchasePrice,
+            (
+                SELECT pi.price_usd
+                FROM lots l
+                JOIN purchase_items pi ON pi.id = l.purchase_item_id
+                WHERE l.variant_id = v.id
+                AND pi.price_usd IS NOT NULL
+                ORDER BY l.created_at DESC
+                LIMIT 1
+            ) AS lastPriceUsd,
+            (
+                SELECT pi.exchange_rate
+                FROM lots l
+                JOIN purchase_items pi ON pi.id = l.purchase_item_id
+                WHERE l.variant_id = v.id
+                AND pi.exchange_rate IS NOT NULL
+                ORDER BY l.created_at DESC
+                LIMIT 1
+            ) AS lastExchangeRate
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
         LEFT JOIN categories root ON root.id = c.parent_id
@@ -29,8 +55,11 @@ const getStock = async (rubro) => {
             l.initial_quantity,
             l.remaining_quantity,
             l.purchase_price,
-            l.created_at
+            l.created_at,
+            pi.price_usd AS priceUsd,
+            pi.exchange_rate AS exchangeRate
         FROM lots l
+        LEFT JOIN purchase_items pi ON pi.id = l.purchase_item_id
         JOIN variants v ON v.product_id IN (
             SELECT p.id FROM products p
             JOIN categories c ON p.category_id = c.id
@@ -49,20 +78,30 @@ const getStock = async (rubro) => {
             initialQuantity: l.initial_quantity,
             remainingQuantity: l.remaining_quantity,
             purchasePrice: Number(l.purchase_price),
-            createdAt: l.created_at
+            createdAt: l.created_at,
+            priceUsd: l.priceUsd ? Number(l.priceUsd) : null,
+            exchangeRate: l.exchangeRate ? Number(l.exchangeRate) : null,
         })
     })
 
     // último precio de compra por variante
     const [lastPrices] = await pool.query(`
-        SELECT variant_id, purchase_price
-        FROM lots
-        WHERE id IN (
+        SELECT l.variant_id, l.purchase_price, pi.price_usd, pi.exchange_rate
+        FROM lots l
+        LEFT JOIN purchase_items pi ON pi.id = l.purchase_item_id
+        WHERE l.id IN (
             SELECT MAX(id) FROM lots GROUP BY variant_id
         )
     `)
     const lastPriceMap = {}
     lastPrices.forEach(r => { lastPriceMap[r.variant_id] = Number(r.purchase_price) })
+
+    const lastPriceUsdMap = {}
+    const lastExchangeRateMap = {}
+    lastPrices.forEach(r => {
+        if (r.price_usd) lastPriceUsdMap[r.variant_id] = Number(r.price_usd)
+        if (r.exchange_rate) lastExchangeRateMap[r.variant_id] = Number(r.exchange_rate)
+    })
 
     const map = {}
     const products = []
@@ -84,8 +123,13 @@ const getStock = async (rubro) => {
                 name: row.variantName,
                 isActive: Boolean(row.variantActive),
                 stock: row.stock,
-                lastPurchasePrice: lastPriceMap[row.variantId] ?? null,
-                lots: lotsMap[row.variantId] ?? []
+                lastPurchasePrice: lastPriceMap[row.variantId] !== undefined
+                    ? lastPriceMap[row.variantId]
+                    : null,
+                lots: lotsMap[row.variantId] ?? [],
+                description: row.variantDescription ?? null,
+                lastPriceUsd: lastPriceUsdMap[row.variantId] ?? null,
+                lastExchangeRate: lastExchangeRateMap[row.variantId] ?? null,
             })
         }
     }
@@ -132,9 +176,9 @@ const createPurchase = async ({ supplierId, rubro, items }) => {
         for (const item of items) {
             // purchase_item
             const [piResult] = await conn.query(`
-                INSERT INTO purchase_items (purchase_id, variant_id, quantity, unit_price)
-                VALUES (?, ?, ?, ?)
-            `, [purchaseId, item.variantId, item.quantity, item.unitPrice])
+                INSERT INTO purchase_items (purchase_id, variant_id, quantity, unit_price, price_usd, exchange_rate)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `, [purchaseId, item.variantId, item.quantity, item.unitPrice, item.priceUsd ?? null, item.exchangeRate ?? null])
 
             // lote nuevo
             await conn.query(`
@@ -196,10 +240,10 @@ const adjustStock = async (variantId, stockReal, reason = '') => {
         // si es ajuste positivo, crear un lote con precio 0
         if (diff > 0) {
             const [[lastLot]] = await conn.query(`
-        SELECT purchase_price FROM lots
-        WHERE variant_id = ?
-        ORDER BY created_at DESC LIMIT 1
-    `, [variantId])
+                SELECT purchase_price FROM lots
+                WHERE variant_id = ?
+                ORDER BY created_at DESC LIMIT 1
+            `, [variantId])
             const lastPrice = lastLot?.purchase_price ?? 0
             await conn.query(`
         INSERT INTO lots (variant_id, initial_quantity, remaining_quantity, purchase_price)

@@ -2,13 +2,13 @@ const pool = require('../db/connection')
 
 // ─── DASHBOARD GANANCIAS ──────────────────────────────────────────────────────
 
-const getSalesChart = async (rubro, period, date) => {
+const getSalesChart = async (rubro, period) => {
     let groupExpr, labelExpr, interval
 
     if (period === 'dias') {
         groupExpr = 'DATE(s.created_at)'
         labelExpr = "DATE_FORMAT(s.created_at, '%d/%m')"
-        interval  = '14 DAY'
+        interval  = '30 DAY'
     } else if (period === 'semanas') {
         groupExpr = 'YEARWEEK(s.created_at, 1)'
         labelExpr = "CONCAT('S', WEEK(s.created_at, 1))"
@@ -24,28 +24,38 @@ const getSalesChart = async (rubro, period, date) => {
             ${labelExpr}                               AS label,
             SUM(s.total - s.discount_amount)           AS ventas,
             SUM(
-                (SELECT COALESCE(SUM(si2.quantity * COALESCE(
-                    (SELECT l.purchase_price FROM lots l WHERE l.variant_id = si2.variant_id ORDER BY l.created_at DESC LIMIT 1), 0
-                )), 0) FROM sale_items si2 WHERE si2.sale_id = s.id)
-            )                                          AS costo,
+                (
+                    SELECT COALESCE(SUM(sm.quantity * l.purchase_price), 0)
+                    FROM stock_movements sm
+                    JOIN lots l ON l.id = sm.lot_id
+                    JOIN sale_items si2 ON si2.id = sm.sale_item_id
+                    WHERE si2.sale_id = s.id
+                    AND sm.type = 'out' AND sm.reason = 'sale'
+                )
+            ) AS costo,
             SUM(s.total - s.discount_amount) - SUM(
-                (SELECT COALESCE(SUM(si2.quantity * COALESCE(
-                    (SELECT l.purchase_price FROM lots l WHERE l.variant_id = si2.variant_id ORDER BY l.created_at DESC LIMIT 1), 0
-                )), 0) FROM sale_items si2 WHERE si2.sale_id = s.id)
-            )                                          AS ganancia,
-            COUNT(*)                                   AS cantidad
+                (
+                    SELECT COALESCE(SUM(sm.quantity * l.purchase_price), 0)
+                    FROM stock_movements sm
+                    JOIN lots l ON l.id = sm.lot_id
+                    JOIN sale_items si2 ON si2.id = sm.sale_item_id
+                    WHERE si2.sale_id = s.id
+                    AND sm.type = 'out' AND sm.reason = 'sale'
+                )
+            ) AS ganancia,
+            COUNT(DISTINCT s.id) AS cantidad    -- 👈 era COUNT(*)
         FROM sales s
         WHERE s.rubro = ?
-          AND s.status = 'delivered'
-          AND s.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
+            AND s.status = 'delivered'
+            AND s.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
         GROUP BY ${groupExpr}
         ORDER BY ${groupExpr} ASC
     `, [rubro])
 
     return rows.map(r => ({
         label:    r.label,
-        ventas:   Number(r.ventas ?? 0),
-        costo:    Number(r.costo ?? 0),
+        ventas:   Number(r.ventas   ?? 0),
+        costo:    Number(r.costo    ?? 0),
         ganancia: Number(r.ganancia ?? 0),
         cantidad: Number(r.cantidad ?? 0),
     }))
@@ -57,18 +67,25 @@ const getKPIs = async (rubro, period) => {
 
     const [[kpis]] = await pool.query(`
         SELECT
-            COUNT(DISTINCT s.id)                              AS totalVentas,
-            COALESCE(SUM(s.total - s.discount_amount), 0)    AS totalVentasAmt,
-            COALESCE(SUM(
-                (SELECT COALESCE(SUM(si2.quantity * COALESCE(
-                    (SELECT l.purchase_price FROM lots l WHERE l.variant_id = si2.variant_id ORDER BY l.created_at DESC LIMIT 1), 0
-                )), 0) FROM sale_items si2 WHERE si2.sale_id = s.id)
-            ), 0)                                             AS totalCosto
+            COUNT(DISTINCT s.id) AS totalVentas,
+            COALESCE(SUM(s.total - s.discount_amount), 0) AS totalVentasAmt,
+            COALESCE((
+                SELECT SUM(sm.quantity * l.purchase_price)
+                FROM stock_movements sm
+                JOIN lots l ON l.id = sm.lot_id
+                JOIN sale_items si2 ON si2.id = sm.sale_item_id
+                JOIN sales s2 ON s2.id = si2.sale_id
+                WHERE s2.rubro = ?
+                AND s2.status = 'delivered'
+                AND s2.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
+                AND sm.type = 'out'
+                AND sm.reason = 'sale'
+            ), 0) AS totalCosto
         FROM sales s
         WHERE s.rubro = ?
-          AND s.status = 'delivered'
-          AND s.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
-    `, [rubro])
+        AND s.status = 'delivered'
+        AND s.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
+    `, [rubro, rubro])
 
     const [[stock]] = await pool.query(`
         SELECT
@@ -83,17 +100,17 @@ const getKPIs = async (rubro, period) => {
           AND l.remaining_quantity > 0
     `, [rubro, rubro])
 
-    const totalVentas   = Number(kpis.totalVentasAmt)
-    const totalCosto    = Number(kpis.totalCosto)
+    const totalVentas = Number(kpis.totalVentasAmt)
+    const totalCosto = Number(kpis.totalCosto)
     const totalGanancia = totalVentas - totalCosto
 
     return {
         totalVentas,
         totalCosto,
         totalGanancia,
-        cantidadVentas:   Number(kpis.totalVentas),
+        cantidadVentas: Number(kpis.totalVentas),
         stockValorCompra: Number(stock.valorCompra),
-        stockValorVenta:  Number(stock.valorVenta),
+        stockValorVenta: Number(stock.valorVenta),
     }
 }
 
@@ -141,15 +158,15 @@ const getTopProducts = async (rubro, period) => {
     `, [rubro])
 
     return rows.map(r => {
-        const totalVentas   = Number(r.totalVentas)
-        const totalCosto    = Number(r.totalCosto)
+        const totalVentas = Number(r.totalVentas)
+        const totalCosto = Number(r.totalCosto)
         const totalGanancia = totalVentas - totalCosto
-        const margen        = totalVentas > 0 ? Math.round((totalGanancia / totalVentas) * 100) : 0
+        const margen = totalVentas > 0 ? Math.round((totalGanancia / totalVentas) * 100) : 0
         return {
-            id:             r.id,
-            productName:    r.productName,
-            image:          r.image,
-            totalUnidades:  Number(r.totalUnidades),
+            id: r.id,
+            productName: r.productName,
+            image: r.image,
+            totalUnidades: Number(r.totalUnidades),
             totalVentas,
             totalCosto,
             totalGanancia,
@@ -182,8 +199,8 @@ const getLowStock = async (rubro, threshold = 5) => {
     return rows.map(r => ({
         productName: r.productName,
         variantName: r.variantName,
-        stock:       Number(r.stock),
-        lastPrice:   Number(r.lastPrice),
+        stock: Number(r.stock),
+        lastPrice: Number(r.lastPrice),
     }))
 }
 
@@ -205,10 +222,10 @@ const getLastPrices = async (rubro) => {
     `, [rubro, rubro])
 
     return rows.map(r => ({
-        productName:   r.productName,
-        variantName:   r.variantName,
+        productName: r.productName,
+        variantName: r.variantName,
         purchasePrice: Number(r.purchase_price),
-        date:          r.created_at,
+        date: r.created_at,
     }))
 }
 

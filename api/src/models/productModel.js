@@ -11,7 +11,8 @@ const getAll = async (rubro) => {
             v.id AS variantId,
             v.name AS variantName,
             v.is_active AS isActive,
-            v.stock
+            v.stock,
+            v.description AS variantDescription
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
         LEFT JOIN variants v ON v.product_id = p.id
@@ -40,7 +41,8 @@ const getAll = async (rubro) => {
             id: row.variantId,
             name: row.variantName,
             isActive: row.isActive,
-            stock: row.stock
+            stock: row.stock,
+            description: row.variantDescription ?? null
         })
     }
 

@@ -74,8 +74,13 @@ const Modal = ({ title, onClose, children }) => (
 
 const ProductModal = ({ product, categories, onClose, onSaved }) => {
     const isEdit = !!product
+
+    const catOptions = categories
+        .filter(c => c.parent_id !== null)
+        .map(c => ({ value: c.id, label: c.name }))
+
     const [name, setName] = useState(product?.name ?? "")
-    const [categoryId, setCategoryId] = useState(product?.categoryId ?? "")
+    const [categoryId, setCategoryId] = useState(product?.categoryId ?? catOptions[0]?.value ?? "")
     const [salePrice, setSalePrice] = useState(product?.salePrice ?? "")
     const [loading, setLoading] = useState(false)
     const [uploading, setUploading] = useState(false)
@@ -86,10 +91,6 @@ const ProductModal = ({ product, categories, onClose, onSaved }) => {
             ? product.image.startsWith('http') ? product.image : `${API_BASE}${product.image}`
             : null
     )
-
-    const catOptions = categories
-        .filter(c => c.parent_id !== null)
-        .map(c => ({ value: c.id, label: c.name }))
 
     const handleImageChange = (e) => {
         const file = e.target.files[0]
@@ -155,9 +156,12 @@ const ProductModal = ({ product, categories, onClose, onSaved }) => {
     )
 }
 
-const VariantModal = ({ variant, productId, onClose, onSaved }) => {
+// ─── VariantModal — ahora con campo descripción ───────────────────────────────
+const VariantModal = ({ variant, productId, rubro, onClose, onSaved }) => {
     const isEdit = !!variant
+    const isVapes = rubro === 'vapes'
     const [name, setName] = useState(variant?.name ?? "")
+    const [description, setDescription] = useState(variant?.description ?? "")
     const [isActive, setIsActive] = useState(variant?.isActive ?? true)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
@@ -166,8 +170,8 @@ const VariantModal = ({ variant, productId, onClose, onSaved }) => {
         if (!name) { setError("Nombre obligatorio"); return }
         setLoading(true); setError("")
         try {
-            if (isEdit) await api.put(`/admin/variants/${variant.id}`, { name, isActive }, authHeaders())
-            else await api.post(`/admin/products/${productId}/variants`, { name }, authHeaders())
+            if (isEdit) await api.put(`/admin/variants/${variant.id}`, { name, isActive, description: description || null }, authHeaders())
+            else await api.post(`/admin/products/${productId}/variants`, { name, description: description || null }, authHeaders())
             onSaved()
         } catch (e) {
             setError(e.response?.data?.error || "Error al guardar")
@@ -176,7 +180,22 @@ const VariantModal = ({ variant, productId, onClose, onSaved }) => {
 
     return (
         <Modal title={isEdit ? "EDITAR VARIANTE" : "NUEVA VARIANTE"} onClose={onClose}>
-            <Input label="NOMBRE" value={name} onChange={setName} placeholder="Ej: Mango, 350ml..." />
+            <Input label="NOMBRE" value={name} onChange={setName} placeholder="Nombre..." />
+
+            {isVapes &&
+                <div className="flex flex-col gap-1">
+                    <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">
+                        DESCRIPCION (sabor / detalle)
+                    </label>
+                    <textarea
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        placeholder={"Descripcion..."}
+                        rows={2}
+                        className="bg-[#1E1E2E] border border-white/10 rounded-xl px-4 py-2.5 font-['koulen'] text-[15px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full resize-none"
+                    />
+                </div>}
+
             {isEdit && <Toggle label="ACTIVA" value={isActive} onChange={setIsActive} />}
             {error && <p className="font-['koulen'] text-[13px] text-red-400">{error}</p>}
             <div className="flex gap-3 justify-end">
@@ -219,18 +238,41 @@ const CategoryModal = ({ rubro, categories, onClose, onSaved }) => {
     )
 }
 
-// ─── Fila de variante — sin stock, con markup y margen ────────────────────────
+// ─── VariantRow — muestra descripción ────────────────────────────────────────
 const VariantRow = ({ variant, onEdit }) => (
     <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.03] rounded-xl">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
             <Tag active={variant.isActive} />
-            <span className="font-['koulen'] text-[16px]">{variant.name}</span>
+            <div className="flex flex-col min-w-0">
+                <span className="font-['koulen'] text-[16px]">{variant.name}</span>
+                {variant.description && (
+                    <span className="font-['koulen'] text-[11px] text-white/35 italic truncate max-w-[220px]">
+                        {variant.description}
+                    </span>
+                )}
+            </div>
         </div>
-        <div className="flex items-center gap-5 text-right">
+        <div className="flex items-center gap-5 text-right shrink-0">
             <div className="flex flex-col items-end">
                 <span className="font-['koulen'] text-[11px] text-white/30">COMPRA</span>
                 <span className="font-['koulen'] text-[14px] text-white/60">{fmt(variant.lastPurchasePrice)}</span>
             </div>
+            {variant.lastPriceUsd && (
+                <div className="flex flex-col items-end">
+                    <span className="font-['koulen'] text-[11px] text-white/30">USD</span>
+                    <span className="font-['koulen'] text-[14px] text-green-400">
+                        U${variant.lastPriceUsd}
+                    </span>
+                </div>
+            )}
+            {variant.lastExchangeRate && (
+                <div className="hidden sm:flex flex-col items-end">
+                    <span className="font-['koulen'] text-[11px] text-white/30">TC</span>
+                    <span className="font-['koulen'] text-[13px] text-white/40">
+                        ${Number(variant.lastExchangeRate).toLocaleString("es-AR")}
+                    </span>
+                </div>
+            )}
             <div className="flex flex-col items-end">
                 <span className="font-['koulen'] text-[11px] text-white/30">GANANCIA</span>
                 <span className={`font-['koulen'] text-[14px] ${variant.ganancia > 0 ? "text-green-400" : "text-white/40"}`}>
@@ -254,7 +296,7 @@ const VariantRow = ({ variant, onEdit }) => (
     </div>
 )
 
-const ProductRow = ({ product, categories, onRefresh }) => {
+const ProductRow = ({ product, categories, rubro, onRefresh }) => {
     const [open, setOpen] = useState(false)
     const [editProduct, setEditProduct] = useState(false)
     const [editVariant, setEditVariant] = useState(null)
@@ -303,9 +345,9 @@ const ProductRow = ({ product, categories, onRefresh }) => {
 
             {editProduct && <ProductModal product={product} categories={categories}
                 onClose={() => setEditProduct(false)} onSaved={() => { setEditProduct(false); onRefresh() }} />}
-            {editVariant && <VariantModal variant={editVariant} productId={product.id}
+            {editVariant && <VariantModal variant={editVariant} productId={product.id} rubro={rubro}
                 onClose={() => setEditVariant(null)} onSaved={() => { setEditVariant(null); onRefresh() }} />}
-            {newVariant && <VariantModal productId={product.id}
+            {newVariant && <VariantModal productId={product.id} rubro={rubro}
                 onClose={() => setNewVariant(false)} onSaved={() => { setNewVariant(false); onRefresh() }} />}
         </div>
     )
@@ -379,7 +421,7 @@ const AdminProductos = () => {
                                 <span className="font-['koulen'] text-[12px] text-white/30">{prods.length}</span>
                             </div>
                             {prods.map(p => (
-                                <ProductRow key={p.id} product={p} categories={categories} onRefresh={fetchData} />
+                                <ProductRow key={p.id} product={p} categories={categories} rubro={rubro} onRefresh={fetchData} />
                             ))}
                         </div>
                     ))}

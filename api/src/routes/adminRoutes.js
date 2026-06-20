@@ -8,6 +8,9 @@ const salesCtrl   = require('../controllers/adminSalesController')
 const pageUserCtrl = require('../controllers/adminPageUserController')
 const dashCtrl = require('../controllers/adminDashboardController')
 const clientesCtrl = require('../controllers/adminClientesController')
+const gastosCtrl = require('../controllers/adminGastosController')
+const cierreCtrl = require('../controllers/adminCierreController')
+const discountAdminCtrl = require('../controllers/adminDiscountController')
 const { requireAuth } = require('../middleware/requireAuth')
 
 router.use(requireAuth)
@@ -64,6 +67,23 @@ router.get('/clientes/stats',       clientesCtrl.getStatsGenerales)
 router.get('/clientes/top',         clientesCtrl.getTopClientes)
 router.get('/clientes/:id',         clientesCtrl.getClienteDetalle)
 
+// ─── gastos ──────────────────────────────────────────────────────────────────
+router.get('/gastos',               gastosCtrl.getAll)
+router.get('/gastos/categories',    gastosCtrl.getCategories)
+router.post('/gastos',              gastosCtrl.create)
+router.put('/gastos/:id',           gastosCtrl.update)
+router.delete('/gastos/:id',        gastosCtrl.remove)
+router.get('/gastos/stats',         gastosCtrl.getStats)
 
+// ─── cierren de caja ──────────────────────────────────────────────────────────
+router.get('/cierre/weeks',        cierreCtrl.getAvailableWeeks)
+router.get('/cierre/comparativa',  cierreCtrl.getComparativa)
+router.post('/cierre',             cierreCtrl.upsertRegistro)
+
+// ─── codigo de descuento ──────────────────────────────────────────────────────
+router.get('/discounts',         discountAdminCtrl.getAll)
+router.post('/discounts',        discountAdminCtrl.create)
+router.patch('/discounts/:id',   discountAdminCtrl.toggle)
+router.delete('/discounts/:id',  discountAdminCtrl.remove)
 
 module.exports = router

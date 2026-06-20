@@ -9,6 +9,9 @@ import AdminPageUser from "./AdminPageUser"
 import AdminDashboardGanancias from "./AdminDashboardGanancias"
 import AdminDashboardProductos from "./AdminDashboardProductos"
 import AdminClientes from "./AdminClientes"
+import AdminGastos from "./AdminGastos"
+import AdminCierreCaja from "./AdminCierreCaja"
+import AdminDescuentos from "./AdminDescuentos"
 
 const SECCIONES = {
   "PRODUCTOS": <AdminProductos />,
@@ -19,6 +22,9 @@ const SECCIONES = {
   "DASHBOARD GANANCIAS":  <AdminDashboardGanancias />,
   "DASHBOARD PRODUCTOS":  <AdminDashboardProductos />,
   "DASHBOARD CLIENTES": <AdminClientes />,
+  "GASTOS": <AdminGastos />,
+  "CIERRE DE CAJA": <AdminCierreCaja />,
+  "DESCUENTOS": <AdminDescuentos />,
 }
 
 const AdminDashboard = () => {
@@ -76,6 +82,7 @@ const AdminDashboard = () => {
               <LiAdmin text="PROMOS"    active={page === "PROMOS"}    onClick={() => handleNav("PROMOS")} />
               <LiAdmin text="STOCK"     active={page === "STOCK"}     onClick={() => handleNav("STOCK")} />
               <LiAdmin text="VENTAS"    active={page === "VENTAS"}    onClick={() => handleNav("VENTAS")} />
+              <LiAdmin text="GASTOS" active={page === "GASTOS"} onClick={() => handleNav("GASTOS")} />
             </ul>
             <h2 className="text-xs font-semibold text-gray-400 tracking-wider uppercase mb-2 px-1 text-center">Finanzas</h2>
             <hr className="border-white/20 mb-1" />
@@ -86,6 +93,7 @@ const AdminDashboard = () => {
             <hr className="border-white/20 mb-1" />
             <ul className="w-full flex flex-col gap-1">
               <LiAdmin text="ADMIN PAGE USER" active={page === "ADMIN PAGE USER"} onClick={() => handleNav("ADMIN PAGE USER")} />
+              <LiAdmin text="DESCUENTOS" active={page === "DESCUENTOS"} onClick={() => handleNav("DESCUENTOS")} />
             </ul>
           </div>
         </div>

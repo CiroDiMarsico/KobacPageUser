@@ -107,7 +107,7 @@ const Confirm = () => {
       .filter(Boolean)
   }
 
-  const armarMensaje = (carritoActual, totalActual, subtotalActual) => {
+  const armarMensaje = (carritoActual, totalActual, subtotalActual, saleId) => {
     const itemsTexto = carritoActual
       .filter(item => !item.isPromo && item.variants)
       .map(item => {
@@ -140,7 +140,7 @@ const Confirm = () => {
       }).join('\n\n')
 
     return `
-🛵 *PEDIDO #00000*
+🛵 *PEDIDO #${String(saleId).padStart(5, '0')}*
 
 👤 *Nombre:* ${informacion.nombre.toLowerCase()}
 📲 *Teléfono:* ${informacion.telefono}
@@ -163,13 +163,12 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
         : discount.discount_value
       : 0
     const totalActual = subtotalActual - discountAmountActual
-    const mensaje = armarMensaje(carritoActual, totalActual, subtotalActual)
 
     const payments = []
     if (show === 'efectivo') payments.push({ method: 'cash', amount: totalActual })
     else if (show === 'transferencia') payments.push({ method: 'transfer', amount: totalActual })
 
-    await api.post('/sales', {
+    const res = await api.post('/sales', {
       informacion,
       carrito: carritoActual,
       location: `${ubicacion.calle} ${ubicacion.numero} - ${ubicacion.barrio}${ubicacion.descripcion ? ` (${ubicacion.descripcion})` : ''}`,
@@ -178,9 +177,11 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
       payments,
       total: totalActual
     })
+    const saleId = res.data.saleId
+    const mensaje = armarMensaje(carritoActual, totalActual, subtotalActual, saleId)
 
     const numero = '5493516427916'
-    const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`
+    const url = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensaje)}`
     window.open(url, '_blank')
     localStorage.removeItem("carrito")
     navigate("/")
