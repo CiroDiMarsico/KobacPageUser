@@ -15,6 +15,7 @@ const Confirm = () => {
   const informacion = state?.informacion ?? JSON.parse(localStorage.getItem("informacion") ?? "[]");
   const promosData = state?.promos ?? [];
   const data = state?.data;
+  const rubro = state?.rubro ?? "bebidas"
 
   useEffect(() => {
     if (!state?.carrito && !state?.ubicacion && !state?.informacion) {
@@ -147,7 +148,7 @@ const Confirm = () => {
 📍 *Dirección:* ${ubicacion.calle.toUpperCase()} ${ubicacion.numero}
 📍 *Barrio:* ${ubicacion.barrio.toUpperCase()} ${ubicacion.descripcion ? `\n📝 *Referencia:* ${ubicacion.descripcion.toLowerCase()}` : ''}
 
-🛒 *PEDIDO:*
+${rubro === 'bebidas' ? '🍾' : '💨'} *PRODUCTOS:*
 ${itemsTexto ? `\n${itemsTexto}\n` : ''}${promosTexto ? `\n🎁 *PROMOS:*\n\n${promosTexto}\n` : ''}
 ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocaleString('es-AR')}\n` : ''}💰 *SUBTOTAL:* $${subtotalActual.toLocaleString('es-AR')}
 💰 *TOTAL:* $${totalActual.toLocaleString('es-AR')} + envío
@@ -172,7 +173,7 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
       informacion,
       carrito: carritoActual,
       location: `${ubicacion.calle} ${ubicacion.numero} - ${ubicacion.barrio}${ubicacion.descripcion ? ` (${ubicacion.descripcion})` : ''}`,
-      rubro: 'bebidas',
+      rubro,
       discount: discount ? { id: discount.id, code: discount.code, amount: discountAmountActual } : null,
       payments,
       total: totalActual
@@ -183,8 +184,14 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
     const numero = '5493516427916'
     const url = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensaje)}`
     window.open(url, '_blank')
-    localStorage.removeItem("carrito")
-    navigate("/")
+
+    if (rubro === 'vapes') {
+      localStorage.removeItem("carrito_vapes")
+    } else {
+      localStorage.removeItem("carrito")
+    }
+
+    navigate(rubro === 'vapes' ? "/v" : "/")
   }
 
   const handleConfirmar = async () => {
@@ -235,9 +242,9 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
     <main className="bg-[#11111F] min-h-[100dvh] text-white pt-[110px] flex flex-col">
       <div>
         <div className="flex items-center justify-center">
-          <Button text="SEGUIR COMPRANDO" width="300px" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => navigate("/")} />
+          <Button text="SEGUIR COMPRANDO" width="300px" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => navigate(rubro === 'vapes' ? "/v" : "/")} />
         </div>
-        <div className="flex gap-2 items-center px-8 mt-6" onClick={() => navigate("/location", { state: { carrito, data } })}>
+        <div className="flex gap-2 items-center px-8 mt-6" onClick={() => navigate("/location", { state: { carrito, data, rubro } })}>
           <img src="./src/assets/ubi.png" alt="" className="h-[35px]" />
           <h1 className="text-2xl font-['koulen']">{ubicacion.calle} {ubicacion.numero} - {ubicacion.barrio}</h1>
         </div>

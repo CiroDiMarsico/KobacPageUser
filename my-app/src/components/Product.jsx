@@ -61,7 +61,7 @@ const Product = ({
         <img src={product.img} alt={product.name} className=" h-[150px]" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <h1 className="font-bold text-[20px] leading-none text-center">{product.name}</h1>
+        <h1 className="font-bold text-[20px] leading-none text-center">{product.name.toUpperCase()}</h1>
         <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none">${product.salePrice.toLocaleString("es-AR")}</h3>
       </div>
       <Button text="AGREGAR" width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" click={abrirPopover} />

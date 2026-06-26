@@ -128,10 +128,17 @@ const PromoModal = ({ promo, rubro, products, onClose, onSaved }) => {
         try {
             let imageUrl = promo?.image ?? null
             if (imageFile) {
+                // borrar imagen vieja si existe y es del servidor
+                if (imageUrl && imageUrl.startsWith('/')) {
+                    await api.delete('/admin/upload-image', {
+                        ...authHeaders(),
+                        data: { url: imageUrl }
+                    })
+                }
                 setUploading(true)
                 const formData = new FormData()
                 formData.append('image', imageFile)
-                const res = await api.post('/admin/upload-image', formData, {
+                const res = await api.post('/admin/upload-image/promo-images', formData, {
                     headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'multipart/form-data' }
                 })
                 imageUrl = res.data.url

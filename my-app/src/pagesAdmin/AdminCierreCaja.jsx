@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import api from "../api/axios"
+import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authH = () => ({ headers: { Authorization: `Bearer ${token()}` } })
@@ -322,7 +323,9 @@ const AdminCierreCaja = () => {
 
             {/* Tabla */}
             {loading ? (
-                <p className="font-['koulen'] text-white/30 tracking-widest text-center py-16">CARGANDO...</p>
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
+                </div>
             ) : cols.length === 0 ? (
                 <p className="font-['koulen'] text-white/20 tracking-widest text-center py-16">
                     SELECCIONA AL MENOS UNA SEMANA

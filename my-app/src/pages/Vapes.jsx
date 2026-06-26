@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 
 const Vapes = ({ hidden = false }) => {
   const divRef = useRef(null);
+  const mensajeOculto = window.btoa("Hola! me pasas el catalogo de vapes");
   const [pathData, setPathData] = useState({ d: "", perimeter: 0 });
 
   useEffect(() => {
@@ -22,7 +23,7 @@ const Vapes = ({ hidden = false }) => {
       hidden={hidden}
       className="relative flex items-center flex-col justify-center font-['Prompt'] font-semibold mx-6 lg:mx-40 xl:mx-80 my-4 rounded-2xl p-8"
       style={{ background: 'linear-gradient(135deg, #1a0a2e 0%, #11111F 50%, #1a0a2e 100%)' }}
-      href="https://wa.me/5493516427916?text=Hola!%20me%20pasas%20el%20catalogo%20de%20vapes%20💜"
+      href={`https://wa.me/5493516427916?text=${encodeURIComponent(window.atob(mensajeOculto))}`}
       target="_blank"
       rel="noopener noreferrer"
     >

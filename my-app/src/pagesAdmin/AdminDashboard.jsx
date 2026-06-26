@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import LiAdmin from "../components/LiAdmin"
 import AdminProductos from "./AdminProductos"
@@ -44,6 +44,17 @@ const AdminDashboard = () => {
     setOpen(false)
   }
 
+  useEffect(() => {
+  if (open) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+  return () => {
+    document.body.style.overflow = ''
+  }
+}, [open])
+
   return (
     <main className="bg-[#11111F] h-screen w-screen text-white font-['prompt'] flex overflow-hidden">
 
@@ -62,7 +73,7 @@ const AdminDashboard = () => {
         onClick={() => setOpen(false)} />
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 bg-[#0A0A14] border-r border-white/10 h-screen w-[300px] flex flex-col items-center justify-between py-6 px-2 z-50 shrink-0 transition-transform duration-300
+      <aside className={`fixed top-0 left-0 bg-[#0A0A14] border-r border-white/10 h-full w-[300px] flex flex-col items-center justify-between py-6 px-2 z-50 shrink-0 transition-transform duration-300 overflow-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
         ${open ? "translate-x-0" : "max-[1599px]:-translate-x-full"}`}>
 
         <div className="w-full flex flex-col items-center gap-6">
@@ -108,7 +119,7 @@ const AdminDashboard = () => {
       </aside>
 
       {/* Contenido */}
-      <div className="flex-1 h-full overflow-y-auto min-[1600px]:pl-[300px] mt-[60px] min-[1600px]:mt-0">
+      <div className="flex-1 overflow-y-auto min-[1600px]:pl-[300px] mt-[60px] min-[1600px]:mt-0 pb-[80px]">
         {SECCIONES[page] ?? (
           <div className="flex flex-col items-center justify-center min-h-full text-center gap-3 p-6">
             <h1 className="font-['koulen'] text-[42px] text-white/20 tracking-widest">{page}</h1>

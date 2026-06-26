@@ -1,3 +1,5 @@
+import botella from '../assets/botella.png'
+
 const Loading = ({
   size = 'large',
 }) => {
@@ -8,8 +10,8 @@ const Loading = ({
 
   return (
     <div className={`${styles[size]}`}>
-      <div className="animate-spin ">
-        <img src="./src/assets/botella.png" alt="cargando" className="h-[50px]"/>
+      <div className="animate-spin">
+        <img src={botella} alt="cargando" className="h-[50px]"/>
       </div>
     </div>
   );

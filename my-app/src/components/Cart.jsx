@@ -4,11 +4,10 @@ import Popover from "./Popover";
 import PopoverPromo from "./PopoverPromo";
 import Button from "./Button";
 
-const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoAlCarrito, getStockDisponible }) => {
+const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoAlCarrito, getStockDisponible, rubro = "bebidas" }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Calcula el total sumando precio * cantidades de cada producto
   const total = carrito.reduce((acc, item) => {
     if (item.isPromo) return acc + item.precio * item.cantidad;
     if (!item.variants) return acc;
@@ -22,7 +21,6 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
     return acc + Object.values(item.variants).reduce((a, b) => a + b, 0);
   }, 0);
 
-  {/*popover*/ }
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [editQuantities, setEditQuantities] = useState({});
   const abrirEditarProducto = (productoData) => {
@@ -51,43 +49,22 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
           <p className={`font-['koulen'] text-[19px] absolute bottom-[-20px] leading-none text-[#00FF1E] bg-[#6F3784] rounded-3xl p-1.5 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"} transition-all duration-300`}>${total.toLocaleString("es-AR")}</p>
         )}
         {totalVariantes == 0 && (
-          <img
-            src="./src/assets/carritoVacio.png"
-            alt="carrito"
-            className={`w-[40px] absolute transition-all duration-300
-        ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
-          />
+          <img src="./src/assets/carritoVacio.png" alt="carrito"
+            className={`w-[40px] absolute transition-all duration-300 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`} />
         )}
         {totalVariantes >= 1 && totalVariantes <= 2 && (
-          <img
-            src="./src/assets/carritoMedio.png"
-            alt="carrito"
-            className={`w-[40px] absolute transition-all duration-300
-        ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
-          />
+          <img src="./src/assets/carritoMedio.png" alt="carrito"
+            className={`w-[40px] absolute transition-all duration-300 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`} />
         )}
         {totalVariantes >= 3 && totalVariantes <= 4 && (
-          <img
-            src="./src/assets/carritoLleno.png"
-            alt="carrito"
-            className={`w-[40px] absolute transition-all duration-300
-        ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
-          />
+          <img src="./src/assets/carritoLleno.png" alt="carrito"
+            className={`w-[40px] absolute transition-all duration-300 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`} />
         )}
         {totalVariantes >= 5 && (
-          <img
-            src="./src/assets/carritoRelleno.png"
-            alt="carrito"
-            className={`w-[40px] absolute transition-all duration-300
-        ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`}
-          />
+          <img src="./src/assets/carritoRelleno.png" alt="carrito"
+            className={`w-[40px] absolute transition-all duration-300 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`} />
         )}
-
-        {/* Flecha */}
-        <span
-          className={`font-['koulen'] text-[28px] leading-none absolute transition-all duration-300
-      ${open ? "opacity-100 scale-100" : "opacity-0 scale-50"}`}
-        >
+        <span className={`font-['koulen'] text-[28px] leading-none absolute transition-all duration-300 ${open ? "opacity-100 scale-100" : "opacity-0 scale-50"}`}>
           &gt;
         </span>
       </button>
@@ -139,6 +116,7 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
                 </div>
               );
             })}
+
           {/* Promos */}
           {carrito.filter(item => item.isPromo).map(item => {
             const promo = promos.find(p => p.id === item.idPromo);
@@ -154,7 +132,6 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
                     ${(item.precio * item.cantidad).toLocaleString("es-AR")}
                   </span>
                 </div>
-
                 <div className="flex flex-col gap-1 pl-1">
                   {promo?.items.map(promoItem => {
                     const producto = data.find(p => p.id === promoItem.idProduct);
@@ -187,14 +164,20 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
             <span className="font-['koulen'] text-[26px] text-[#00FF1E]">${total.toLocaleString("es-AR")}</span>
           </div>
           <p className="text-white/90 text-[14px] text-right font-['prompt'] mb-4">+ ENVIO</p>
-          <Button text="CONFIRMAR" width="100%" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px"
+          <Button
+            text="CONFIRMAR"
+            width="100%"
+            height="44px"
+            color="#C32CFF"
+            textColor="#FFFFFF"
+            textSize="20px"
             disabled={carrito.length === 0}
-            click={() => navigate("/location", { state: { carrito, data, promos } })}
+            click={() => navigate("/location", { state: { carrito, data, promos, rubro } })}
           />
         </div>
       </aside>
 
-      {/* Popover para editar */}
+      {/* Popover para editar producto */}
       {productoSeleccionado && (
         <Popover
           product={productoSeleccionado}

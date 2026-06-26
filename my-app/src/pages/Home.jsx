@@ -14,6 +14,7 @@ const Home = () => {
   // ------------------------------
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
+  
 
   useEffect(() => {
     setLoading(true)
@@ -48,6 +49,14 @@ const Home = () => {
 
   const dataFiltrada = data.filter(p =>
     p.name.toLowerCase().includes(search)
+  );
+
+  const promosFiltradas = promos.filter(promo =>
+    promo.name.toLowerCase().includes(search) ||
+    promo.items.some(item => {
+      const producto = data.find(p => p.id === item.idProduct);
+      return producto?.name.toLowerCase().includes(search);
+    })
   );
 
   const [show, setShow] = useState("promos");
@@ -105,7 +114,7 @@ const Home = () => {
 
   const agregarPromoAlCarrito = (promo, { cantidad, selecciones }, keyExistente = null) => {
     setCarrito(prev => {
-      const key = keyExistente ?? `promo_${promo.id}`;  // 👈 key fija por promo
+      const key = keyExistente ?? `promo_${promo.id}`;
 
       if (cantidad === 0) {
         return prev.filter(item => item.key !== key);
@@ -136,7 +145,7 @@ const Home = () => {
     }
 
     const enProductos = carrito
-      .filter(item => !item.isPromo && item.variants && item.idProduct !== excludeProductId) // 👈
+      .filter(item => !item.isPromo && item.variants && item.idProduct !== excludeProductId)
       .reduce((acc, item) => acc + (Number(item.variants[variantIdStr]) || 0), 0);
 
     const enPromos = carrito
@@ -145,7 +154,7 @@ const Home = () => {
         const totalEnEstaPromo = Object.values(item.selecciones).reduce((a, variantMap) => {
           return a + (Number(variantMap[variantIdStr]) || 0);
         }, 0);
-        return acc + totalEnEstaPromo; // 👈 sin * item.cantidad
+        return acc + totalEnEstaPromo;
       }, 0);
 
     return Math.max(0, stockOriginal - enProductos - enPromos);
@@ -153,7 +162,7 @@ const Home = () => {
 
   return (
     <main
-      className="bg-top bg-repeat min-h-screen text-white pt-[80px]"
+      className="bg-top bg-repeat text-white pt-[80px] pb-[100px]"
       style={{
         backgroundImage: `url(${grafittiKobac})`
       }}
@@ -185,7 +194,7 @@ const Home = () => {
       <div className="flex justify-center items-center h-[120px] gap-[3vw]">
         <Button text="PROMOS" width="125px" click={() => { setShow("promos") }} color={show == "promos" ? "#C32CFF" : "#1E1E1E"} textColor={show == "promos" ? "#ffffff" : "#C32CFF"} />
         <Button text="BEBIDAS" width="125px" click={() => { setShow("bebidas") }} color={show == "bebidas" ? "#C32CFF" : "#1E1E1E"} textColor={show == "bebidas" ? "#ffffff" : "#C32CFF"} />
-        <Button text="VAPES" width="125px" click={() => { setShow("vapes") }} color={show == "vapes" ? "#C32CFF" : "#1E1E1E"} textColor={show == "vapes" ? "#ffffff" : "#C32CFF"} />
+        <Button text="💨V-SHOP" width="125px" click={() => { setShow("vapes") }} color={show == "vapes" ? "#C32CFF" : "#1E1E1E"} textColor={show == "vapes" ? "#ffffff" : "#C32CFF"} />
       </div>
 
       {/*search*/}
@@ -199,9 +208,9 @@ const Home = () => {
       </div>
 
       {/*categories sections*/}
-      <div className="mt-[40px] min-h-[60vh]">
+      <div className="mt-[40px] min-h-[50vh]">
         <div key={show} className="animate-slide">
-          {show === "promos" && <Promos data={data} promos={promos} agregarPromoAlCarrito={agregarPromoAlCarrito} getStockDisponible={getStockDisponible} carrito={carrito} />}
+          {show === "promos" && <Promos data={data} promos={promosFiltradas} agregarPromoAlCarrito={agregarPromoAlCarrito} getStockDisponible={getStockDisponible} carrito={carrito} />}
           {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={dataFiltrada} getStockDisponible={getStockDisponible} carrito={carrito} loading={loading} />}
           {show === "vapes" && <Vapes />}
         </div>

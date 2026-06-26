@@ -105,10 +105,17 @@ const ProductModal = ({ product, categories, onClose, onSaved }) => {
         try {
             let imageUrl = product?.image ?? null
             if (imageFile) {
+                // borrar imagen vieja si existe y es del servidor
+                if (imageUrl && imageUrl.startsWith('/')) {
+                    await api.delete('/admin/upload-image', {
+                        ...authHeaders(),
+                        data: { url: imageUrl }
+                    })
+                }
                 setUploading(true)
                 const formData = new FormData()
                 formData.append('image', imageFile)
-                const res = await api.post('/admin/upload-image', formData, {
+                const res = await api.post('/admin/upload-image/product-images', formData, {
                     headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'multipart/form-data' }
                 })
                 imageUrl = res.data.url

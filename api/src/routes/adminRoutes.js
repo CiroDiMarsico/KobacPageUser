@@ -11,6 +11,7 @@ const clientesCtrl = require('../controllers/adminClientesController')
 const gastosCtrl = require('../controllers/adminGastosController')
 const cierreCtrl = require('../controllers/adminCierreController')
 const discountAdminCtrl = require('../controllers/adminDiscountController')
+const createUpload = require('../middleware/upload')
 const { requireAuth } = require('../middleware/requireAuth')
 
 router.use(requireAuth)
@@ -46,7 +47,7 @@ router.put('/sales/:id',            salesCtrl.updateSale)
 
 // ─── Page User ────────────────────────────────────────────────────────────────
 router.get('/page-user/carousel',              pageUserCtrl.getCarousel)
-router.post('/page-user/carousel',             upload.single('image'), pageUserCtrl.uploadAndAddCarousel)
+router.post('/page-user/carousel', requireAuth, createUpload('carousel-images').single('image'), pageUserCtrl.uploadAndAddCarousel)
 router.post('/page-user/carousel/reorder',     pageUserCtrl.reorderCarousel)
 router.put('/page-user/carousel/:id',          pageUserCtrl.updateCarouselImage)
 router.delete('/page-user/carousel/:id',       pageUserCtrl.deleteCarouselImage)

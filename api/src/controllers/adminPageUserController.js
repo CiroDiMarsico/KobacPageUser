@@ -6,10 +6,14 @@ const IMAGES_DIR = path.join(__dirname, '../../public/product-images')
 
 // Borra el archivo físico si la URL apunta a /product-images/
 const tryDeleteFile = (url) => {
-    if (!url || !url.startsWith('/product-images/')) return
+    const validFolders = ['product-images', 'promo-images', 'carousel-images']
+    const folder = validFolders.find(f => url?.startsWith(`/${f}/`))
+    if (!folder) return
+
     const filename = path.basename(url)
     if (filename.includes('..') || filename.includes('/')) return
-    const filePath = path.join(IMAGES_DIR, filename)
+
+    const filePath = path.join(__dirname, `../../public/${folder}`, filename)
     try {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
     } catch (e) {
@@ -32,8 +36,8 @@ const getCarousel = async (req, res) => {
 const uploadAndAddCarousel = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' })
-        const url = `/product-images/${req.file.filename}`
-        const id  = await model.addCarouselImage(url)
+        const url = `/carousel-images/${req.file.filename}`
+        const id = await model.addCarouselImage(url)
         res.status(201).json({ ok: true, id, url })
     } catch (e) {
         console.error(e)

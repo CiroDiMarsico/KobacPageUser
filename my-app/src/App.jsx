@@ -9,6 +9,7 @@ import Confirm from "./pages/Confirm"
 import NotFound from "./pages/NotFound"
 import Navbar from "./components/Navbar"
 import Loading from "./components/Loading"
+import HomeVapes from "./pages/HomeVapes"
 
 // Páginas admin
 import AdminLogin from "./pagesAdmin/AdminLogin"
@@ -26,6 +27,7 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={loading ? <Loading /> : <><Navbar /><Home /></>} />
+        <Route path="/v" element={loading ? <Loading /> : <><Navbar /><HomeVapes /></>} />
         <Route path="/location" element={<><Navbar /><Location /></>} />
         <Route path="/confirm" element={<><Navbar /><Confirm /></>} />
 

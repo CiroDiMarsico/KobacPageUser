@@ -8,6 +8,7 @@ const Location = () => {
   const { state } = useLocation();
   const carrito = state?.carrito ?? JSON.parse(localStorage.getItem("carrito") ?? "[]");
   const data = state?.data;
+  const rubro = state?.rubro ?? "bebidas"
   useEffect(() => {
     if (!state?.carrito) {
       navigate("/");
@@ -30,14 +31,14 @@ const Location = () => {
     const informacion = { nombre, telefono };
     localStorage.setItem("ubicacion", JSON.stringify(ubicacion));
     localStorage.setItem("informacion", JSON.stringify(informacion));
-    navigate("/confirm", { state: { carrito, ubicacion, data, informacion, promos: state?.promos } });
+    navigate("/confirm", { state: { carrito, ubicacion, data, informacion, promos: state?.promos, rubro } });
   };
 
   return (
     <main className="bg-[#11111F] min-h-[100dvh] text-white pt-[110px] flex flex-col items-center">
       <div className="sm:w-[600px] flex justify-center flex-col items-center">
         <div className="flex items-center justify-center">
-          <Button text="SEGUIR COMPRANDO" width="300px" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => navigate("/")}
+          <Button text="SEGUIR COMPRANDO" width="300px" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => navigate(rubro === 'vapes' ? "/v" : "/")}
           />
         </div>
 

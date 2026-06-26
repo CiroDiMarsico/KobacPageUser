@@ -11,7 +11,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:3000',
-      '/product-images': 'http://localhost:3000'  // ← esto es lo nuevo
+      '/product-images': 'http://localhost:3000',
+      '/promo-images': 'http://localhost:3000', 
+      '/carousel-images': 'http://localhost:3000',
     }
   }
 })

@@ -5,7 +5,12 @@ import Button from "../components/Button";
 const Promos = ({ promos, data, carrito, agregarPromoAlCarrito, getStockDisponible }) => {
   return (
     <div className="flex flex-col gap-6 px-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 justify-items-center">
+      {promos.length === 0 && (
+        <p className="font-['koulen'] text-[20px] text-white/30 tracking-widest text-center py-10">
+          NO HAY PROMOS DISPONIBLES
+        </p>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center">
         {promos.map(promo => (
           <PromoItem
             key={promo.id}
@@ -78,21 +83,46 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
   };
 
   return (
-    <div className="w-[170px] h-[300px] bg-[#1E1E1E] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt']">
-      <div className="rounded-3xl h-[150px] w-full flex items-center justify-center">
-        <img src={promo.img} alt={promo.name} className="rounded-3xl w-full flex items-center justify-center object-contain" />
+    <div className="w-[95%] bg-[#1E1E1E] rounded-3xl flex flex-col items-center justify-between p-4 font-['prompt'] gap-4">
+
+      {/* Imagen */}
+      <img
+        src={promo.img}
+        alt={promo.name}
+        className="rounded-2xl w-full object-cover mask-b-from-90% mask-b-to-100%"
+      />
+
+      {/* Info */}
+      <div className="flex flex-col items-center gap-1 w-full">
+        <h1 className="font-bold text-[18px] leading-none text-center">{promo.name.toUpperCase()}</h1>
+        <h3 className="font-bold text-[20px] text-[#00FF1E]">${promo.price.toLocaleString("es-AR")}</h3>
+
+        {/* Productos */}
+        <div className="w-full grid grid-cols-2 gap-2">
+          {promo.items.map(item => {
+            const producto = data.find(p => p.id === item.idProduct);
+            return (
+              <div key={item.idProduct} className="flex items-center justify-between px-2">
+                <span className="font-['koulen'] text-[14px] text-white/60">
+                  {producto?.name ?? '—'}
+                </span>
+                <span className="font-['koulen'] text-[14px] text-[#C32CFF]">
+                  x{item.quantity}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div className="flex flex-col items-center gap-1 mt-2">
-        <h1 className="font-bold text-[16px] leading-none text-center">{promo.name}</h1>
-        <h3 className="font-bold text-[16px] text-[#00FF1E]">${promo.price.toLocaleString("es-AR")}</h3>
-      </div>
+
+      {/* Botón */}
       <Button
         text="AGREGAR"
-        width="120px"
-        height="34px"
+        width="130px"
+        height="36px"
         color="#C32CFF"
         textColor="#FFFFFF"
-        textSize="16px"
+        textSize="17px"
         click={abrirPopover}
       />
 

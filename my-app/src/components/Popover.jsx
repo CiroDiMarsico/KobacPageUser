@@ -20,7 +20,7 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-10deg] h-[70%] object-contain opacity-50 blur-[3px] select-none pointer-events-none z-0"
         />
         <div className="flex flex-col items-center gap-1 z-10 my-4">
-          <h1 className="font-bold text-[32px] leading-none text-center">{product.name}</h1>
+          <h1 className="font-bold text-[32px] leading-none text-center">{product.name.toUpperCase()}</h1>
           <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none">${product.salePrice}</h3>
         </div>
         <div className="flex flex-col items-center gap-5 z-10">
@@ -28,7 +28,12 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
             .filter(variant => variant.isActive)
             .map(variant =>
               <div key={variant.id} className="w-full flex items-center justify-between gap-5">
-                <h1 className="font-[koulen] text-[22px]">{variant.name}</h1>
+                <div className="flex flex-col gap-0.5">
+                  <h1 className="font-[koulen] text-[22px] leading-tight">{variant.name}</h1>
+                  {variant.description && (
+                    <p className="font-['prompt'] text-[13px] text-white/50 leading-tight">{variant.description}</p>
+                  )}
+                </div>
 
                 {variant.stock === 0 &&
                   <div className="flex items-center gap-4 relative">
@@ -57,8 +62,8 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
                     >+</button>
                     <h1 className="font-[koulen] text-[22px] w-4 text-center">{quantities[String(variant.id)] ?? 0}</h1>
                     {(quantities[String(variant.id)] >= getStockDisponible(variant.id) || getStockDisponible(variant.id) === 0) && (
-                      <span className="font-['koulen'] text-[13px] absolute text-center top-[-10px] left-1/2 -translate-x-1/2 text-[#FF4444]/80">
-                        {`max ${getStockDisponible(variant.id)}`}
+                      <span className="font-['koulen'] text-[13px] absolute text-center top-[-15px] left-1/2 -translate-x-1/2 text-[#FF4444]/80 w-[200px]">
+                        NO HAY SUFICIENTE STOCK
                       </span>
                     )}
                     <button
@@ -72,7 +77,7 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
         </div>
         <div className="z-10 absolute bottom-10">
           <Button
-            text="AGREGAR"
+            text="CONFIRMAR"
             width="150px"
             height="38px"
             color="#C32CFF"

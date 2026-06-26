@@ -2,7 +2,6 @@ import Loading from "../components/Loading";
 import Product from "../components/Product";
 
 const Bebidas = ({
-  hidden = false,
   agregarAlCarrito,
   data,
   getStockDisponible,
@@ -11,7 +10,12 @@ const Bebidas = ({
 }) => {
 
   return (
-    <div hidden={hidden} className="flex flex-col gap-8 px-4 h-[1000vh]">
+    <div className="flex flex-col gap-8 px-4">
+      {data.length === 0 && (
+        <p className="font-['koulen'] text-[20px] text-white/30 tracking-widest text-center py-10">
+          NO HAY BEBIDAS DISPONIBLES
+        </p>
+      )}
       {[...new Set(data.map(p => p.category))].map(categoria => (
         <div key={categoria}>
           <h2 className="font-['prompt'] text-[25px] font-bold text-[#fff] mb-4 text-center">

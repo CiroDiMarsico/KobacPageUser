@@ -15,7 +15,7 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
             String(v.id),
             Math.min(
               initialQuantities?.selecciones?.[item.idProduct]?.[String(v.id)] ?? 0,
-              getStockDisponible(String(v.id))  // 👈 no puede superar el stock disponible
+              getStockDisponible(String(v.id))
             )
           ]))
         ];
@@ -90,7 +90,12 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
         </div>
 
         <div className="flex items-center justify-between z-10 bg-white/5 rounded-2xl px-4 py-3">
-          <span className="font-['koulen'] text-[18px]">CANTIDAD</span>
+          <div className="flex flex-col">
+            <span className="font-['koulen'] text-[18px]">CANTIDAD</span>
+            {!puedeAgregarMasPromos() && (
+              <span className="font-['koulen'] text-[14px] text-[#FF4444]">NO HAY SUFICIENTE STOCK</span>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => handleCantidad(Math.max(0, cantidad - 1))}
@@ -135,7 +140,7 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
                         <div className="flex flex-col">
                           <h1 className="font-['koulen'] text-[18px]">{variant.name}</h1>
                           {llegueAlMax && (
-                            <span className="font-['koulen'] text-[11px] text-[#FF4444]">máx {stockDisp}</span>
+                            <span className="font-['koulen'] text-[14px] text-[#FF4444]">NO HAY SUFICIENTE STOCK</span>
                           )}
                         </div>
                         <div className="flex items-center gap-4">

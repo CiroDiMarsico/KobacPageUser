@@ -12,7 +12,8 @@ const app = express()
 const cors = require('cors')
 app.use(cors({ origin: '*' }))
 
-app.use(express.json())
+app.use(express.json({ limit: '20mb' }))
+app.use(express.urlencoded({ limit: '20mb', extended: true }))
 
 app.use(express.static(path.join(__dirname, 'public')))
 // -------------------------------
@@ -41,6 +42,9 @@ app.use('/api/admin', adminRoutes)
 
 const uploadRoutes = require('./src/routes/uploadRoutes')
 app.use('/api/admin', uploadRoutes)
+
+const aiRoutes = require('./src/routes/aiRoutes')
+app.use('/api/ai', aiRoutes)
 // -------------------------------
 
 //port
