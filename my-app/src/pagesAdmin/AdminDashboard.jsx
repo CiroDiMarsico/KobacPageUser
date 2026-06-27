@@ -61,7 +61,7 @@ const AdminDashboard = () => {
       {/* Navbar mobile */}
       <nav className="fixed top-0 left-0 bg-[#0A0A14] border-b border-white/10 w-screen h-[60px] min-[1600px]:hidden flex z-30 justify-between items-center px-4">
         <button className="w-[35px]" onClick={() => setOpen(!open)}>
-          <img src="../src/assets/menu.png" alt="menu" />
+          <img src="/assets/menu.png" alt="menu" />
         </button>
         <h1 className="text-white/70 font-['koulen'] text-[20px]">{page}</h1>
         <div className="w-[35px]" />

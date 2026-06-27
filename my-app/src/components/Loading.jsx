@@ -1,4 +1,4 @@
-import botella from '../assets/botella.png'
+import botella from '/assets/botella.png'
 
 const Loading = ({
   size = 'large',
