@@ -32,6 +32,11 @@ function App() {
         <Route path="/confirm" element={<><Navbar /><Confirm /></>} />
 
         <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/admin/dashboard/*" element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
         <Route path="/admin/dashboard" element={
           <ProtectedRoute>
             <AdminDashboard />

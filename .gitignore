@@ -27,3 +27,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Imágenes subidas en desarrollo (Backend)
+api/public/product-images/*
+api/public/promo-images/*
+api/public/carousel-images/*

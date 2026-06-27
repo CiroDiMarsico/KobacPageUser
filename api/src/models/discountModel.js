@@ -10,11 +10,13 @@ const validate = async (code) => {
     return discount || null
 }
 
-const deactivate = async (conn, code) => {   // ← recibe conn
-    await conn.query(`
+const deactivate = async (conn, code) => {
+    const db = (code !== undefined) ? conn : pool
+    const targetCode = (code !== undefined) ? code : conn
+    await db.query(`
         UPDATE discount_codes SET is_active = FALSE
         WHERE code = ?
-    `, [code])
+    `, [targetCode])
 }
 
 module.exports = { validate, deactivate }

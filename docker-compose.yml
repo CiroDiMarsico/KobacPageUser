@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: kobac_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - kobac_db_data:/var/lib/mysql
+    networks:
+      - kobac_network
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: kobac_api
+    restart: always
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    volumes:
+      - kobac_uploads:/app/public
+    depends_on:
+      - db
+    networks:
+      - kobac_network
+
+  frontend:
+    build:
+      context: ./my-app
+      dockerfile: Dockerfile
+    container_name: kobac_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - kobac_network
+
+volumes:
+  kobac_db_data:
+  kobac_uploads:
+
+networks:
+  kobac_network:
+    driver: bridge
