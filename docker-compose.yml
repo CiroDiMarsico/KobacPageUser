@@ -8,8 +8,6 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
     volumes:
       - kobac_db_data:/var/lib/mysql
-    networks:
-      - kobac_network
 
   api:
     build:
@@ -28,8 +26,6 @@ services:
       - kobac_uploads:/app/public
     depends_on:
       - db
-    networks:
-      - kobac_network
 
   frontend:
     build:
@@ -40,14 +36,7 @@ services:
       - "80:80"
     depends_on:
       - api
-    networks:
-      - kobac_network
 
 volumes:
   kobac_db_data:
   kobac_uploads:
-
-networks:
-  kobac_network:
-    driver: overlay
-    attachable: true
