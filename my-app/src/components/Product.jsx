@@ -57,7 +57,7 @@ const Product = ({
 
   return (
     <div className="w-[170px] bg-[#1E1E1E] h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt']">
-      <div className="bg-white rounded-3xl h-[150px] w-[100%] flex items-center justify-center">
+      <div className="bg-[#fff] rounded-3xl h-[150px] w-[100%] flex items-center justify-center">
         <img src={product.img} alt={product.name} className=" h-[150px]" />
       </div>
       <div className="flex flex-col items-center gap-1">

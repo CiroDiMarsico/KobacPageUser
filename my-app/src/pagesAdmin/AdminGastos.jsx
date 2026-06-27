@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import api from "../api/axios"
+import Loading from "../components/Loading"
+import { Navigate } from "react-router-dom"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
@@ -18,9 +20,9 @@ const todayISO = () => new Date().toISOString().split("T")[0]
 const Btn = ({ onClick, children, color = "purple", small = false, disabled = false }) => {
     const colors = {
         purple: "bg-[#C32CFF] hover:bg-[#d444ff] text-white",
-        ghost:  "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10",
-        red:    "bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30",
-        green:  "bg-green-600 hover:bg-green-500 text-white",
+        ghost: "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10",
+        red: "bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30",
+        green: "bg-green-600 hover:bg-green-500 text-white",
     }
     return (
         <button onClick={onClick} disabled={disabled}
@@ -60,14 +62,14 @@ const Modal = ({ title, onClose, children }) => (
 const GastoForm = ({ rubro, gasto, categories, onClose, onSaved }) => {
     const isEdit = !!gasto
 
-    const [category,    setCategory]    = useState(gasto?.category    ?? "")
+    const [category, setCategory] = useState(gasto?.category ?? "")
     const [description, setDescription] = useState(gasto?.description ?? "")
-    const [unitPrice,   setUnitPrice]   = useState(gasto?.unitPrice   != null ? String(gasto.unitPrice) : "")
-    const [quantity,    setQuantity]    = useState(String(gasto?.quantity ?? 1))
-    const [total,       setTotal]       = useState(gasto?.total != null ? String(gasto.total) : "")
-    const [date,        setDate]        = useState(gasto?.date ? gasto.date.split("T")[0] : todayISO())
-    const [loading,     setLoading]     = useState(false)
-    const [error,       setError]       = useState("")
+    const [unitPrice, setUnitPrice] = useState(gasto?.unitPrice != null ? String(gasto.unitPrice) : "")
+    const [quantity, setQuantity] = useState(String(gasto?.quantity ?? 1))
+    const [total, setTotal] = useState(gasto?.total != null ? String(gasto.total) : "")
+    const [date, setDate] = useState(gasto?.date ? gasto.date.split("T")[0] : todayISO())
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
 
     // Auto-calcular total cuando cambian unitPrice o quantity
     useEffect(() => {
@@ -85,15 +87,15 @@ const GastoForm = ({ rubro, gasto, categories, onClose, onSaved }) => {
         try {
             const body = {
                 rubro,
-                category:    category.trim(),
+                category: category.trim(),
                 description: description.trim() || null,
-                unitPrice:   unitPrice !== "" ? Number(unitPrice) : null,
-                quantity:    Number(quantity) || 1,
-                total:       Number(total),
+                unitPrice: unitPrice !== "" ? Number(unitPrice) : null,
+                quantity: Number(quantity) || 1,
+                total: Number(total),
                 date,
             }
             if (isEdit) await api.put(`/admin/gastos/${gasto.id}`, body, authHeaders())
-            else        await api.post("/admin/gastos", body, authHeaders())
+            else await api.post("/admin/gastos", body, authHeaders())
             onSaved()
         } catch (e) {
             setError(e.response?.data?.error || "Error al guardar")
@@ -191,16 +193,16 @@ const GastoRow = ({ gasto, onEdit, onDelete }) => {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 const AdminGastos = () => {
-    const [rubro,      setRubro]      = useState("bebidas")
-    const [gastos,     setGastos]     = useState([])
+    const [rubro, setRubro] = useState("bebidas")
+    const [gastos, setGastos] = useState([])
     const [categories, setCategories] = useState([])
-    const [loading,    setLoading]    = useState(false)
-    const [weeks,      setWeeks]      = useState(1)
+    const [loading, setLoading] = useState(false)
+    const [weeks, setWeeks] = useState(1)
     const [filterDate, setFilterDate] = useState("")
-    const [search,     setSearch]     = useState("")
+    const [search, setSearch] = useState("")
 
-    const [showNew,   setShowNew]   = useState(false)
-    const [editing,   setEditing]   = useState(null)
+    const [showNew, setShowNew] = useState(false)
+    const [editing, setEditing] = useState(null)
 
     // ─── fetch ────────────────────────────────────────────────────────────────
     const fetchGastos = async () => {
@@ -235,7 +237,7 @@ const AdminGastos = () => {
         if (!search.trim()) return true
         const q = search.toLowerCase()
         return g.category.toLowerCase().includes(q) ||
-               (g.description ?? "").toLowerCase().includes(q)
+            (g.description ?? "").toLowerCase().includes(q)
     })
 
     // ─── agrupar por semana ───────────────────────────────────────────────────
@@ -254,9 +256,9 @@ const AdminGastos = () => {
     }
 
     // resumen global visible
-    const totalGlobal      = filtered.reduce((a, g) => a + g.total, 0)
-    const totalPositivo    = filtered.filter(g => g.total >= 0).reduce((a, g) => a + g.total, 0)
-    const totalNegativo    = filtered.filter(g => g.total < 0).reduce((a, g) => a + g.total, 0)
+    const totalGlobal = filtered.reduce((a, g) => a + g.total, 0)
+    const totalPositivo = filtered.filter(g => g.total >= 0).reduce((a, g) => a + g.total, 0)
+    const totalNegativo = filtered.filter(g => g.total < 0).reduce((a, g) => a + g.total, 0)
 
     // totales por categoría
     const byCategory = filtered.reduce((acc, g) => {
@@ -366,7 +368,9 @@ const AdminGastos = () => {
 
             {/* Lista agrupada por semana */}
             {loading ? (
-                <p className="font-['koulen'] text-white/30 tracking-widest text-center py-10">CARGANDO...</p>
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
+                </div>
             ) : filtered.length === 0 ? (
                 <p className="font-['koulen'] text-white/20 text-center py-10 tracking-widest">SIN GASTOS</p>
             ) : (

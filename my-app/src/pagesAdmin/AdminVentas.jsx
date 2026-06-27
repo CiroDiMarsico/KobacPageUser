@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import api from "../api/axios"
 import TicketVenta from "./TicketVenta"
+import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
@@ -870,7 +871,9 @@ const AdminVentas = () => {
             </div>
 
             {loading ? (
-                <p className="font-['koulen'] text-white/30 tracking-widest text-center py-10">CARGANDO...</p>
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
+                </div>
             ) : tab === "proceso" ? (
                 <div className="flex flex-col gap-4">
                     {inProcess.length > 0 && (

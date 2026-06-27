@@ -5,6 +5,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Legend
 } from "recharts"
+import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authH = () => ({ headers: { Authorization: `Bearer ${token()}` } })
@@ -137,10 +138,8 @@ const AdminDashboardGanancias = () => {
 
             {/* KPIs */}
             {loading ? (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {[...Array(6)].map((_, i) => (
-                        <div key={i} className="h-[90px] bg-white/[0.03] border border-white/5 rounded-2xl animate-pulse" />
-                    ))}
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
                 </div>
             ) : kpis && (
                 <div className="flex flex-wrap gap-3">

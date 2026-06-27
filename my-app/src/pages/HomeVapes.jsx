@@ -126,13 +126,8 @@ const HomeVapes = () => {
 
       {/* Header con botón ir a bebidas */}
       <div className="flex justify-center items-center gap-4 h-[100px]">
-        <h1 className="font-['koulen'] text-[32px] tracking-widest text-[#C32CFF]">VAPES</h1>
-        <button
-          onClick={() => navigate("/")}
-          className="font-['koulen'] text-[14px] text-white/40 hover:text-white border border-white/10 hover:border-white/30 rounded-xl px-4 py-2 transition-all"
-        >
-          → BEBIDAS
-        </button>
+        <Button text="VAPES" width="150px" color={"#C32CFF"} textColor={"#ffffff"} />
+        <Button text="→ BEBIDAS" width="150px" click={() => navigate("/")} color={"#1E1E1E"} textColor={"#C32CFF"} />
       </div>
 
       {/* Búsqueda */}

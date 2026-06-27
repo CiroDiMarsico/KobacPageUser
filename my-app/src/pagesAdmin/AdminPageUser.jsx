@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react"
 import api from "../api/axios"
+import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
-const API_BASE = "http://localhost:3000"
+const API_BASE = import.meta.env.VITE_LINK
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
 const Btn = ({ onClick, children, color = "purple", small = false, disabled = false }) => {
@@ -135,7 +136,9 @@ const CarouselSection = () => {
             </div>
 
             {loading ? (
-                <p className="font-['koulen'] text-white/30 text-center py-8 tracking-widest">CARGANDO...</p>
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
+                </div>
             ) : items.length === 0 ? (
                 <div className="border border-dashed border-white/10 rounded-2xl p-10 text-center">
                     <p className="font-['koulen'] text-[14px] text-white/20 tracking-widest">SIN IMAGENES</p>
@@ -330,7 +333,9 @@ const MarqueeSection = () => {
             </div>
 
             {loading ? (
-                <p className="font-['koulen'] text-white/30 text-center py-8 tracking-widest">CARGANDO...</p>
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
+                </div>
             ) : items.length === 0 ? (
                 <div className="border border-dashed border-white/10 rounded-2xl p-10 text-center">
                     <p className="font-['koulen'] text-[14px] text-white/20 tracking-widest">SIN TEXTOS</p>

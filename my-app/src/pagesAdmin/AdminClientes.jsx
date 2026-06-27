@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react"
 import api from "../api/axios"
+import Loading from "../components/Loading"
 
-const token    = () => localStorage.getItem("adminToken")
-const authH    = () => ({ headers: { Authorization: `Bearer ${token()}` } })
-const fmt      = (n) => `$${Number(n ?? 0).toLocaleString("es-AR")}`
-const fmtDate  = (d) => d ? new Date(d).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"
+const token = () => localStorage.getItem("adminToken")
+const authH = () => ({ headers: { Authorization: `Bearer ${token()}` } })
+const fmt = (n) => `$${Number(n ?? 0).toLocaleString("es-AR")}`
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"
 const diasDesde = (d) => {
     if (!d) return null
     const diff = Math.floor((Date.now() - new Date(d)) / 86400000)
@@ -14,11 +15,11 @@ const diasDesde = (d) => {
 }
 
 const STATUS_LABEL = {
-    pending:   { label: "PENDIENTE",  color: "text-yellow-400" },
-    paid:      { label: "PAGADO",     color: "text-blue-400" },
-    shipping:  { label: "EN CAMINO",  color: "text-purple-400" },
-    delivered: { label: "ENTREGADO",  color: "text-green-400" },
-    cancelled: { label: "CANCELADO",  color: "text-red-400" },
+    pending: { label: "PENDIENTE", color: "text-yellow-400" },
+    paid: { label: "PAGADO", color: "text-blue-400" },
+    shipping: { label: "EN CAMINO", color: "text-purple-400" },
+    delivered: { label: "ENTREGADO", color: "text-green-400" },
+    cancelled: { label: "CANCELADO", color: "text-red-400" },
 }
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
@@ -49,8 +50,8 @@ const StatCard = ({ label, value, sub, color = "text-white", accent = false }) =
 
 // ─── Panel detalle cliente ────────────────────────────────────────────────────
 const ClienteDetalle = ({ clienteId, onClose }) => {
-    const [data, setData]     = useState(null)
-    const [loading, setLoad]  = useState(false)
+    const [data, setData] = useState(null)
+    const [loading, setLoad] = useState(false)
 
     useEffect(() => {
         if (!clienteId) return
@@ -70,16 +71,18 @@ const ClienteDetalle = ({ clienteId, onClose }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 sticky top-0 bg-[#0A0A14] z-10">
                     <h2 className="font-['koulen'] text-[20px] tracking-widest text-[#C32CFF]">
-                        {loading ? "CARGANDO..." : data?.nombre ?? "CLIENTE"}
+                        {loading ? (
+                            <div className="flex items-center justify-center h-[463px]">
+                                <Loading size="small" />
+                            </div>)
+                            : data?.nombre ?? "CLIENTE"}
                     </h2>
                     <button onClick={onClose} className="font-['koulen'] text-[20px] text-white/40 hover:text-white transition-colors">✕</button>
                 </div>
 
                 {loading && (
-                    <div className="flex flex-col gap-3 p-6">
-                        {[...Array(5)].map((_, i) => (
-                            <div key={i} className="h-14 bg-white/5 rounded-2xl animate-pulse" />
-                        ))}
+                    <div className="flex items-center justify-center h-[463px]">
+                        <Loading size="small" />
                     </div>
                 )}
 
@@ -103,10 +106,10 @@ const ClienteDetalle = ({ clienteId, onClose }) => {
 
                         {/* Stats */}
                         <div className="grid grid-cols-2 gap-3">
-                            <StatCard label="TOTAL GASTADO"  value={fmt(data.totalGastado)}   color="text-[#C32CFF]" accent />
-                            <StatCard label="PEDIDOS"        value={data.totalPedidos}         color="text-white" />
-                            <StatCard label="TICKET PROM."  value={fmt(data.ticketPromedio)}  color="text-white/70" />
-                            <StatCard label="CANCELADOS"     value={data.cancelados}
+                            <StatCard label="TOTAL GASTADO" value={fmt(data.totalGastado)} color="text-[#C32CFF]" accent />
+                            <StatCard label="PEDIDOS" value={data.totalPedidos} color="text-white" />
+                            <StatCard label="TICKET PROM." value={fmt(data.ticketPromedio)} color="text-white/70" />
+                            <StatCard label="CANCELADOS" value={data.cancelados}
                                 color={data.cancelados > 0 ? "text-red-400" : "text-white/30"} />
                         </div>
 
@@ -178,14 +181,14 @@ const ClienteDetalle = ({ clienteId, onClose }) => {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 const AdminClientes = () => {
-    const [rubro, setRubro]       = useState("todos")
-    const [period, setPeriod]     = useState("siempre")
-    const [orderBy, setOrderBy]   = useState("totalGastado")
+    const [rubro, setRubro] = useState("todos")
+    const [period, setPeriod] = useState("siempre")
+    const [orderBy, setOrderBy] = useState("totalGastado")
     const [clientes, setClientes] = useState([])
-    const [stats, setStats]       = useState(null)
-    const [loading, setLoading]   = useState(false)
+    const [stats, setStats] = useState(null)
+    const [loading, setLoading] = useState(false)
     const [selected, setSelected] = useState(null)
-    const [search, setSearch]     = useState("")
+    const [search, setSearch] = useState("")
 
     const fetchAll = async () => {
         setLoading(true)
@@ -225,10 +228,10 @@ const AdminClientes = () => {
             {/* Stats generales */}
             {stats && (
                 <div className="flex flex-wrap gap-3">
-                    <StatCard label="TOTAL CLIENTES"    value={stats.totalClientes}          color="text-white" />
-                    <StatCard label="CON COMPRAS"       value={stats.clientesActivos}         color="text-[#C32CFF]" accent />
-                    <StatCard label="GASTO PROMEDIO"    value={fmt(stats.gastoPromedioPorCliente)}  color="text-white/80" />
-                    <StatCard label="PEDIDOS PROM."     value={Number(stats.pedidosPromedioPorCliente).toFixed(1)} color="text-white/70" />
+                    <StatCard label="TOTAL CLIENTES" value={stats.totalClientes} color="text-white" />
+                    <StatCard label="CON COMPRAS" value={stats.clientesActivos} color="text-[#C32CFF]" accent />
+                    <StatCard label="GASTO PROMEDIO" value={fmt(stats.gastoPromedioPorCliente)} color="text-white/80" />
+                    <StatCard label="PEDIDOS PROM." value={Number(stats.pedidosPromedioPorCliente).toFixed(1)} color="text-white/70" />
                     <StatCard
                         label="RETENCIÓN"
                         value={`${stats.tasaRetencion}%`}
@@ -241,22 +244,22 @@ const AdminClientes = () => {
             {/* Filtros */}
             <div className="flex flex-wrap gap-3 items-center justify-between">
                 <div className="flex gap-2 flex-wrap">
-                    <RubroTab value="todos"   label="TODOS"   active={rubro === "todos"}   onClick={() => setRubro("todos")} />
+                    <RubroTab value="todos" label="TODOS" active={rubro === "todos"} onClick={() => setRubro("todos")} />
                     <RubroTab value="bebidas" label="BEBIDAS" active={rubro === "bebidas"} onClick={() => setRubro("bebidas")} />
-                    <RubroTab value="vapes"   label="VAPES"   active={rubro === "vapes"}   onClick={() => setRubro("vapes")} />
+                    <RubroTab value="vapes" label="VAPES" active={rubro === "vapes"} onClick={() => setRubro("vapes")} />
                 </div>
                 <div className="flex gap-2 flex-wrap">
                     <PeriodBtn label="SIEMPRE" active={period === "siempre"} onClick={() => setPeriod("siempre")} />
-                    <PeriodBtn label="MES"     active={period === "mes"}     onClick={() => setPeriod("mes")} />
-                    <PeriodBtn label="SEMANA"  active={period === "semana"}  onClick={() => setPeriod("semana")} />
+                    <PeriodBtn label="MES" active={period === "mes"} onClick={() => setPeriod("mes")} />
+                    <PeriodBtn label="SEMANA" active={period === "semana"} onClick={() => setPeriod("semana")} />
                 </div>
             </div>
 
             {/* Orden + búsqueda */}
             <div className="flex gap-3 items-center flex-wrap">
                 <div className="flex gap-2 flex-wrap">
-                    <PeriodBtn label="$ GASTADO"  active={orderBy === "totalGastado"}    onClick={() => setOrderBy("totalGastado")} />
-                    <PeriodBtn label="PEDIDOS"    active={orderBy === "cantidadPedidos"} onClick={() => setOrderBy("cantidadPedidos")} />
+                    <PeriodBtn label="$ GASTADO" active={orderBy === "totalGastado"} onClick={() => setOrderBy("totalGastado")} />
+                    <PeriodBtn label="PEDIDOS" active={orderBy === "cantidadPedidos"} onClick={() => setOrderBy("cantidadPedidos")} />
                     <PeriodBtn label="TICKET PROM." active={orderBy === "ticketPromedio"} onClick={() => setOrderBy("ticketPromedio")} />
                 </div>
                 <input
@@ -270,10 +273,8 @@ const AdminClientes = () => {
 
             {/* Tabla ranking */}
             {loading ? (
-                <div className="flex flex-col gap-2">
-                    {[...Array(8)].map((_, i) => (
-                        <div key={i} className="h-[72px] bg-white/[0.02] border border-white/5 rounded-2xl animate-pulse" />
-                    ))}
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="flex items-center justify-center border border-dashed border-white/10 rounded-2xl p-12">
@@ -292,7 +293,7 @@ const AdminClientes = () => {
                             >
                                 {/* Posición */}
                                 <span className="font-['koulen'] text-[20px] w-7 text-center shrink-0"
-                                    style={{ color: i < 3 ? ["#FFD700","#C0C0C0","#CD7F32"][i] : "rgba(255,255,255,0.2)" }}>
+                                    style={{ color: i < 3 ? ["#FFD700", "#C0C0C0", "#CD7F32"][i] : "rgba(255,255,255,0.2)" }}>
                                     {i + 1}
                                 </span>
 

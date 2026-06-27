@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import api from "../api/axios"
+import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
@@ -313,7 +314,9 @@ const AdminDescuentos = () => {
 
             {/* Lista */}
             {loading ? (
-                <p className="font-['koulen'] text-white/30 tracking-widest text-center py-10">CARGANDO...</p>
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
+                </div>
             ) : filtered.length === 0 ? (
                 <div className="border border-dashed border-white/10 rounded-2xl p-12 text-center">
                     <p className="font-['koulen'] text-white/20 tracking-widest">SIN CÓDIGOS</p>

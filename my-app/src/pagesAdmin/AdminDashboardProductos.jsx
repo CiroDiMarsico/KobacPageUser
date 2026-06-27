@@ -5,14 +5,15 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Cell
 } from "recharts"
+import Loading from "../components/Loading"
 
-const token    = () => localStorage.getItem("adminToken")
-const authH    = () => ({ headers: { Authorization: `Bearer ${token()}` } })
-const fmt      = (n) => `$${Number(n ?? 0).toLocaleString("es-AR")}`
-const API_BASE = "http://localhost:3000"
+const token = () => localStorage.getItem("adminToken")
+const authH = () => ({ headers: { Authorization: `Bearer ${token()}` } })
+const fmt = (n) => `$${Number(n ?? 0).toLocaleString("es-AR")}`
+const API_BASE = import.meta.env.VITE_LINK
 
-const COLORS = ["#C32CFF","#a020d9","#8010bb","#60009a","#40007a",
-                "#300060","#250050","#1a003a","#100025","#080015"]
+const COLORS = ["#C32CFF", "#a020d9", "#8010bb", "#60009a", "#40007a",
+    "#300060", "#250050", "#1a003a", "#100025", "#080015"]
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
 const RubroTab = ({ value, active, onClick }) => (
@@ -67,14 +68,14 @@ const MargenBar = ({ pct }) => {
 
 // ─── Dashboard Productos ──────────────────────────────────────────────────────
 const AdminDashboardProductos = () => {
-    const [rubro, setRubro]         = useState("bebidas")
-    const [period, setPeriod]       = useState("siempre")
-    const [topProducts, setTop]     = useState([])
-    const [lowStock, setLow]        = useState([])
-    const [lastPrices, setPrices]   = useState([])
+    const [rubro, setRubro] = useState("bebidas")
+    const [period, setPeriod] = useState("siempre")
+    const [topProducts, setTop] = useState([])
+    const [lowStock, setLow] = useState([])
+    const [lastPrices, setPrices] = useState([])
     const [threshold, setThreshold] = useState(5)
-    const [loading, setLoading]     = useState(false)
-    const [chartMetric, setMetric]  = useState("totalUnidades")
+    const [loading, setLoading] = useState(false)
+    const [chartMetric, setMetric] = useState("totalUnidades")
 
     const fetchAll = async () => {
         setLoading(true)
@@ -102,7 +103,7 @@ const AdminDashboardProductos = () => {
 
     const metricLabel = {
         totalUnidades: "Unidades",
-        totalVentas:   "$ Ventas",
+        totalVentas: "$ Ventas",
         totalGanancia: "$ Ganancia",
     }
 
@@ -118,7 +119,7 @@ const AdminDashboardProductos = () => {
                 </div>
                 <div className="flex gap-2">
                     <RubroTab value="bebidas" active={rubro === "bebidas"} onClick={() => setRubro("bebidas")} />
-                    <RubroTab value="vapes"   active={rubro === "vapes"}   onClick={() => setRubro("vapes")} />
+                    <RubroTab value="vapes" active={rubro === "vapes"} onClick={() => setRubro("vapes")} />
                 </div>
             </div>
 
@@ -128,13 +129,15 @@ const AdminDashboardProductos = () => {
                     <h2 className="font-['koulen'] text-[20px] tracking-widest text-[#C32CFF]">MAS VENDIDOS</h2>
                     <div className="flex gap-2 flex-wrap">
                         <PeriodBtn label="SIEMPRE" active={period === "siempre"} onClick={() => setPeriod("siempre")} />
-                        <PeriodBtn label="MES"     active={period === "mes"}     onClick={() => setPeriod("mes")} />
-                        <PeriodBtn label="SEMANA"  active={period === "semana"}  onClick={() => setPeriod("semana")} />
+                        <PeriodBtn label="MES" active={period === "mes"} onClick={() => setPeriod("mes")} />
+                        <PeriodBtn label="SEMANA" active={period === "semana"} onClick={() => setPeriod("semana")} />
                     </div>
                 </div>
 
                 {loading ? (
-                    <div className="h-[260px] bg-white/[0.02] border border-white/10 rounded-2xl animate-pulse" />
+                    <div className="flex items-center justify-center h-[463px]">
+                        <Loading size="small" />
+                    </div>
                 ) : topProducts.length === 0 ? (
                     <div className="h-[200px] flex items-center justify-center border border-dashed border-white/10 rounded-2xl">
                         <p className="font-['koulen'] text-white/20 tracking-widest">SIN DATOS</p>
@@ -143,9 +146,9 @@ const AdminDashboardProductos = () => {
                     <>
                         {/* Toggle métrica — ahora con 3 opciones */}
                         <div className="flex gap-2 flex-wrap">
-                            <PeriodBtn label="UNIDADES"   active={chartMetric === "totalUnidades"}  onClick={() => setMetric("totalUnidades")} />
-                            <PeriodBtn label="$ VENTAS"   active={chartMetric === "totalVentas"}    onClick={() => setMetric("totalVentas")} />
-                            <PeriodBtn label="$ GANANCIA" active={chartMetric === "totalGanancia"}  onClick={() => setMetric("totalGanancia")} />
+                            <PeriodBtn label="UNIDADES" active={chartMetric === "totalUnidades"} onClick={() => setMetric("totalUnidades")} />
+                            <PeriodBtn label="$ VENTAS" active={chartMetric === "totalVentas"} onClick={() => setMetric("totalVentas")} />
+                            <PeriodBtn label="$ GANANCIA" active={chartMetric === "totalGanancia"} onClick={() => setMetric("totalGanancia")} />
                         </div>
 
                         {/* Gráfico horizontal */}
@@ -232,7 +235,9 @@ const AdminDashboardProductos = () => {
                 </div>
 
                 {loading ? (
-                    <div className="h-[120px] bg-white/[0.02] border border-white/10 rounded-2xl animate-pulse" />
+                    <div className="flex items-center justify-center h-[463px]">
+                        <Loading size="small" />
+                    </div>
                 ) : lowStock.length === 0 ? (
                     <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-2xl px-5 py-4">
                         <span className="text-[20px]">✓</span>
@@ -278,7 +283,9 @@ const AdminDashboardProductos = () => {
             <div className="flex flex-col gap-4">
                 <h2 className="font-['koulen'] text-[20px] tracking-widest text-[#C32CFF]">ULTIMOS PRECIOS MAYORISTAS</h2>
                 {loading ? (
-                    <div className="h-[180px] bg-white/[0.02] border border-white/10 rounded-2xl animate-pulse" />
+                    <div className="flex items-center justify-center h-[463px]">
+                        <Loading size="small" />
+                    </div>
                 ) : lastPrices.length === 0 ? (
                     <p className="font-['koulen'] text-white/20 tracking-widest text-center py-8">SIN DATOS</p>
                 ) : (

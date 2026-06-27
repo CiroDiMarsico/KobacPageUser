@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
 import api from "../api/axios"
+import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
 const fmt = (n) => n != null ? `$${Number(n).toLocaleString("es-AR")}` : "—"
 const fmtPct = (n) => n != null ? `${n}%` : "—"
-const API_BASE = 'http://localhost:3000'
+const API_BASE = import.meta.env.VITE_LINK
 
 const Tag = ({ active }) => (
     <span className={`font-['koulen'] text-[11px] px-2 py-0.5 rounded-full ${active
@@ -344,7 +345,9 @@ const AdminPromos = () => {
                 className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[44px] px-5 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full max-w-[400px]" />
 
             {loading ? (
-                <p className="font-['koulen'] text-white/30 tracking-widest text-center py-10">CARGANDO...</p>
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
+                </div>
             ) : (
                 <div className="flex flex-col gap-3">
                     {filtered.map(promo => (
