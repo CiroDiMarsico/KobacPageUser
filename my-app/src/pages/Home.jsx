@@ -7,6 +7,7 @@ import Carousel from "../components/Carousel";
 import Loading from "../components/Loading";
 import Cart from "../components/Cart";
 import grafittiKobac from "/assets/grafittiKobac.png";
+import lupaIcon from "/assets/lupa.png";
 import api from '../api/axios'
 const Home = () => {
   // ------------------------------
@@ -202,7 +203,7 @@ const Home = () => {
         <div className=" flex justify-center items-centerbackdrop-blur-md shadow-[0_0_40px_rgba(168,85,247,0.35)] rounded-full">
           <input type="text" className="bg-[#4E486E] w-[330px] sm:w-[500px] h-[50px] rounded-l-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0" onChange={e => setSearch(e.target.value.toLowerCase())} />
           <button className="bg-[#4E486E] h-[50px] w-[50px] rounded-r-full flex items-center p-1">
-            <img src="/assets/lupa.png" alt="lupa" className="h-[40px]" />
+            <img src={lupaIcon} alt="lupa" className="h-[40px]" />
           </button>
         </div>
       </div>

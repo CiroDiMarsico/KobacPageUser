@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import api from '../api/axios'
+import ubiIcon from '/assets/ubi.png'
 
 const Confirm = () => {
 
@@ -245,7 +246,7 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
           <Button text="SEGUIR COMPRANDO" width="300px" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => navigate(rubro === 'vapes' ? "/v" : "/")} />
         </div>
         <div className="flex gap-2 items-center px-8 mt-6" onClick={() => navigate("/location", { state: { carrito, data, rubro } })}>
-          <img src="/assets/ubi.png" alt="" className="h-[35px]" />
+          <img src={ubiIcon} alt="" className="h-[35px]" />
           <h1 className="text-2xl font-['koulen']">{ubicacion.calle} {ubicacion.numero} - {ubicacion.barrio}</h1>
         </div>
 
