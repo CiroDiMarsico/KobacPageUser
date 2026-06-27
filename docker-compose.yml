@@ -3,7 +3,6 @@ version: '3.8'
 services:
   db:
     image: mysql:8.0
-    container_name: kobac_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
@@ -17,7 +16,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: kobac_api
+    image: kobac_api:latest
     restart: always
     environment:
       PORT: 3000
@@ -38,7 +37,7 @@ services:
     build:
       context: ./my-app
       dockerfile: Dockerfile
-    container_name: kobac_frontend
+    image: kobac_frontend:latest
     restart: always
     ports:
       - "80:80"
