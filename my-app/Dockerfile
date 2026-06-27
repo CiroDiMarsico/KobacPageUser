@@ -1,4 +1,4 @@
-# Etapa 1: Compilación de React
+# Etapa 1: Compilacion de React
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -12,4 +12,4 @@ RUN npm run build
 # Etapa 2: Servidor Nginx
 FROM nginx:alpine
 
-COPY --from=build /app
+COPY --from=build /app/dist /usr/share/nginx/html
