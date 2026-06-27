@@ -1,14 +1,6 @@
 version: '3.8'
 
 services:
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-    volumes:
-      - kobac_db_data:/var/lib/mysql
-
   api:
     build:
       context: ./api
@@ -16,7 +8,7 @@ services:
     image: kobac_api:latest
     environment:
       PORT: 3000
-      DB_HOST: db
+      DB_HOST: mysql
       DB_USER: root
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
@@ -24,8 +16,8 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
     volumes:
       - kobac_uploads:/app/public
-    depends_on:
-      - db
+    networks:
+      - red_existente
 
   frontend:
     build:
@@ -36,7 +28,13 @@ services:
       - "8080:80"
     depends_on:
       - api
+    networks:
+      - red_existente
 
 volumes:
-  kobac_db_data:
   kobac_uploads:
+
+networks:
+  red_existente:
+    external: true
+    name: Kobacnet
