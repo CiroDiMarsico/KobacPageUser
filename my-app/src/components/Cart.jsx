@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Popover from "./Popover";
 import PopoverPromo from "./PopoverPromo";
 import Button from "./Button";
+import carritoVacio from "/assets/carritoVacio.png";
+import carritoMedio from "/assets/carritoMedio.png";
+import carritoLleno from "/assets/carritoLleno.png";
+import carritoRelleno from "/assets/carritoRelleno.png";
 
 const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoAlCarrito, getStockDisponible, rubro = "bebidas" }) => {
   const [open, setOpen] = useState(false);
@@ -49,19 +53,19 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
           <p className={`font-['koulen'] text-[19px] absolute bottom-[-20px] leading-none text-[#00FF1E] bg-[#6F3784] rounded-3xl p-1.5 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"} transition-all duration-300`}>${total.toLocaleString("es-AR")}</p>
         )}
         {totalVariantes == 0 && (
-          <img src="./src/assets/carritoVacio.png" alt="carrito"
+          <img src={carritoVacio} alt="carrito"
             className={`w-[40px] absolute transition-all duration-300 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`} />
         )}
         {totalVariantes >= 1 && totalVariantes <= 2 && (
-          <img src="./src/assets/carritoMedio.png" alt="carrito"
+          <img src={carritoMedio} alt="carrito"
             className={`w-[40px] absolute transition-all duration-300 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`} />
         )}
         {totalVariantes >= 3 && totalVariantes <= 4 && (
-          <img src="./src/assets/carritoLleno.png" alt="carrito"
+          <img src={carritoLleno} alt="carrito"
             className={`w-[40px] absolute transition-all duration-300 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`} />
         )}
         {totalVariantes >= 5 && (
-          <img src="./src/assets/carritoRelleno.png" alt="carrito"
+          <img src={carritoRelleno} alt="carrito"
             className={`w-[40px] absolute transition-all duration-300 ${open ? "opacity-0 scale-50" : "opacity-100 scale-100"}`} />
         )}
         <span className={`font-['koulen'] text-[28px] leading-none absolute transition-all duration-300 ${open ? "opacity-100 scale-100" : "opacity-0 scale-50"}`}>
