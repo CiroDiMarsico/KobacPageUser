@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     image: kobac_api:latest
     environment:
-      PORT: 3306
+      PORT: 3000
       DB_HOST: ${DB_HOST}
       DB_USER: root
       DB_PASSWORD: ${DB_PASSWORD}
