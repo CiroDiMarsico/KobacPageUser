@@ -17,7 +17,7 @@ services:
     volumes:
       - kobac_uploads:/app/public
     networks:
-      - red_existente
+      - kobac_network
 
   frontend:
     build:
@@ -29,12 +29,11 @@ services:
     depends_on:
       - api
     networks:
-      - red_existente
+      - kobac_network
 
 volumes:
   kobac_uploads:
 
 networks:
-  red_existente:
-    external: true
-    name: Kobacnet
+  kobac_network:
+    external: false
