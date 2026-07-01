@@ -16,12 +16,12 @@ import AdminDescuentos from "./AdminDescuentos"
 
 const SECCIONES = {
   "PRODUCTOS": <AdminProductos />,
-  "PROMOS":    <AdminPromos />,
-  "STOCK":     <AdminStock />,
-  "VENTAS":    <AdminVentas />,
+  "PROMOS": <AdminPromos />,
+  "STOCK": <AdminStock />,
+  "VENTAS": <AdminVentas />,
   "ADMIN PAGE USER": <AdminPageUser />,
-  "DASHBOARD GANANCIAS":  <AdminDashboardGanancias />,
-  "DASHBOARD PRODUCTOS":  <AdminDashboardProductos />,
+  "DASHBOARD GANANCIAS": <AdminDashboardGanancias />,
+  "DASHBOARD PRODUCTOS": <AdminDashboardProductos />,
   "DASHBOARD CLIENTES": <AdminClientes />,
   "GASTOS": <AdminGastos />,
   "CIERRE DE CAJA": <AdminCierreCaja />,
@@ -46,15 +46,15 @@ const AdminDashboard = () => {
   }
 
   useEffect(() => {
-  if (open) {
-    document.body.style.overflow = 'hidden'
-  } else {
-    document.body.style.overflow = ''
-  }
-  return () => {
-    document.body.style.overflow = ''
-  }
-}, [open])
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
 
   return (
     <main className="bg-[#11111F] h-screen w-screen text-white font-['prompt'] flex overflow-hidden">
@@ -91,9 +91,9 @@ const AdminDashboard = () => {
             <hr className="border-white/20 mb-1" />
             <ul className="w-full flex flex-col gap-1 mb-6">
               <LiAdmin text="PRODUCTOS" active={page === "PRODUCTOS"} onClick={() => handleNav("PRODUCTOS")} />
-              <LiAdmin text="PROMOS"    active={page === "PROMOS"}    onClick={() => handleNav("PROMOS")} />
-              <LiAdmin text="STOCK"     active={page === "STOCK"}     onClick={() => handleNav("STOCK")} />
-              <LiAdmin text="VENTAS"    active={page === "VENTAS"}    onClick={() => handleNav("VENTAS")} />
+              <LiAdmin text="PROMOS" active={page === "PROMOS"} onClick={() => handleNav("PROMOS")} />
+              <LiAdmin text="STOCK" active={page === "STOCK"} onClick={() => handleNav("STOCK")} />
+              <LiAdmin text="VENTAS" active={page === "VENTAS"} onClick={() => handleNav("VENTAS")} />
               <LiAdmin text="GASTOS" active={page === "GASTOS"} onClick={() => handleNav("GASTOS")} />
             </ul>
             <h2 className="text-xs font-semibold text-gray-400 tracking-wider uppercase mb-2 px-1 text-center">Finanzas</h2>

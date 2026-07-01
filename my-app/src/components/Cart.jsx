@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Popover from "./Popover";
 import PopoverPromo from "./PopoverPromo";
@@ -34,6 +34,17 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
     ));
     setProductoSeleccionado(productoData);
   };
+
+  useEffect(() => {
+      if (open) {
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = ''
+      }
+      return () => {
+        document.body.style.overflow = ''
+      }
+    }, [open])
 
   const [promoDataEditando, setPromoDataEditando] = useState(null);
 
@@ -74,9 +85,9 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
       </button>
 
       {/* Overlay */}
-      {open && (
-        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setOpen(false)} />
-      )}
+      <div className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300
+          ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        onClick={() => setOpen(false)} />
 
       {/* Panel lateral */}
       <aside className={`fixed top-0 right-0 h-[100%] w-[310px] md:w-[400px] bg-[#11111F] z-50 flex flex-col
@@ -98,7 +109,12 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
                   className="cursor-pointer active:opacity-70 transition-opacity"
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
+                    <div className="flex items-center justify-center gap-2">
+                      <button className="h-[25px] w-[25px] flex items-center justify-center rounded-md">
+                        <img src="/assets/editar.png" className="h-[18px]" alt="" />
+                      </button>
+                      <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
+                    </div>
                     <span className="font-['koulen'] text-[20px] text-[#00FF1E]">
                       ${(item.precio * cantTotal).toLocaleString("es-AR")}
                     </span>
@@ -131,7 +147,12 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
                 className="cursor-pointer active:opacity-70 transition-opacity"
               >
                 <div className="flex justify-between items-center mb-1">
-                  <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
+                  <div className="flex items-center justify-center gap-2">
+                    <button className="h-[25px] w-[25px] flex items-center justify-center rounded-md">
+                      <img src="/assets/editar.png" className="h-[18px]" alt="" />
+                    </button>
+                    <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
+                  </div>
                   <span className="font-['koulen'] text-[20px] text-[#00FF1E]">
                     ${(item.precio * item.cantidad).toLocaleString("es-AR")}
                   </span>

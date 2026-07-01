@@ -15,7 +15,7 @@ const Home = () => {
   // ------------------------------
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
-  
+
 
   useEffect(() => {
     setLoading(true)
@@ -193,15 +193,43 @@ const Home = () => {
 
       {/*categories buttons*/}
       <div className="flex justify-center items-center h-[120px] gap-[3vw]">
-        <Button text="PROMOS" width="125px" click={() => { setShow("promos") }} color={show == "promos" ? "#C32CFF" : "#1E1E1E"} textColor={show == "promos" ? "#ffffff" : "#C32CFF"} />
-        <Button text="BEBIDAS" width="125px" click={() => { setShow("bebidas") }} color={show == "bebidas" ? "#C32CFF" : "#1E1E1E"} textColor={show == "bebidas" ? "#ffffff" : "#C32CFF"} />
-        <Button text="💨V-SHOP" width="125px" click={() => { setShow("vapes") }} color={show == "vapes" ? "#C32CFF" : "#1E1E1E"} textColor={show == "vapes" ? "#ffffff" : "#C32CFF"} />
+
+        <button
+          className={`rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px]`}
+          onClick={() => { setShow("promos") }}
+          style={{
+            backgroundColor: show == "promos" ? "#C32CFF" : "#1E1E1E",
+            color: show == "promos" ? "#ffffff" : "#C32CFF",
+          }}
+        >
+          PROMOS
+        </button>
+        <button
+          className={`rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px]`}
+          onClick={() => { setShow("bebidas") }}
+          style={{
+            backgroundColor: show == "bebidas" ? "#C32CFF" : "#1E1E1E",
+            color: show == "bebidas" ? "#ffffff" : "#C32CFF",
+          }}
+        >
+          BEBIDAS
+        </button>
+        <button
+          className={`rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px]`}
+          onClick={() => { setShow("vapes") }}
+          style={{
+            backgroundColor: show == "vapes" ? "#C32CFF" : "#1E1E1E",
+            color: show == "vapes" ? "#ffffff" : "#C32CFF",
+          }}
+        >
+          💨V-SHOP
+        </button>
       </div>
 
       {/*search*/}
       <div className="flex justify-center items-center">
         <div className=" flex justify-center items-centerbackdrop-blur-md shadow-[0_0_40px_rgba(168,85,247,0.35)] rounded-full">
-          <input type="text" className="bg-[#4E486E] w-[330px] sm:w-[500px] h-[50px] rounded-l-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0" onChange={e => setSearch(e.target.value.toLowerCase())} />
+          <input type="text" className="bg-[#4E486E] w-[330px] sm:w-[500px] max-[400px]:w-[300px] max-[350px]:w-[250px] h-[50px] rounded-l-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0" onChange={e => setSearch(e.target.value.toLowerCase())} />
           <button className="bg-[#4E486E] h-[50px] w-[50px] rounded-r-full flex items-center p-1">
             <img src={lupaIcon} alt="lupa" className="h-[40px]" />
           </button>

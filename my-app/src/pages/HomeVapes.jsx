@@ -101,7 +101,7 @@ const HomeVapes = () => {
 
   return (
     <main
-      className="bg-top bg-repeat min-h-screen text-white pt-[80px]"
+      className="bg-top bg-repeat min-h-screen text-white pt-[80px] pb-[100px]"
       style={{ backgroundImage: `url(${grafittiKobac})` }}
     >
       {/* Carousel */}
@@ -136,7 +136,7 @@ const HomeVapes = () => {
         <div className="flex justify-center items-center backdrop-blur-md shadow-[0_0_40px_rgba(168,85,247,0.35)] rounded-full">
           <input
             type="text"
-            className="bg-[#4E486E] w-[330px] sm:w-[500px] h-[50px] rounded-l-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0"
+            className="bg-[#4E486E] w-[330px] sm:w-[500px] max-[400px]:w-[300px] max-[350px]:w-[250px] h-[50px] rounded-l-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0"
             onChange={e => setSearch(e.target.value.toLowerCase())}
           />
           <button className="bg-[#4E486E] h-[50px] w-[50px] rounded-r-full flex items-center p-1">

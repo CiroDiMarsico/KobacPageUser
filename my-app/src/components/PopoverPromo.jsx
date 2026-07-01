@@ -85,7 +85,7 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
         />
 
         <div className="flex flex-col items-center gap-1 z-10">
-          <h1 className="font-bold text-[28px] leading-none text-center">{promo.name}</h1>
+          <h1 className="font-bold text-[28px] leading-none text-center">{promo.name.toUpperCase()}</h1>
           <h3 className="font-bold text-[18px] text-[#00FF1E]">${(promo.price * cantidad).toLocaleString("es-AR")}</h3>
         </div>
 
@@ -124,7 +124,7 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
               return (
                 <div key={item.idProduct} className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-['koulen'] text-[20px]">{producto.name}</span>
+                    <span className="font-['koulen'] text-[22px]">{producto.name}</span>
                     <span className={`font-['koulen'] text-[14px] ${totalElegido === requerido ? 'text-[#00FF1E]' : 'text-white/40'}`}>
                       {totalElegido}/{requerido}
                     </span>
@@ -138,7 +138,7 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
                     return (
                       <div key={variant.id} className="flex items-center justify-between">
                         <div className="flex flex-col">
-                          <h1 className="font-['koulen'] text-[18px]">{variant.name}</h1>
+                          <h1 className="font-['koulen'] text-[18px] text-white/70">{variant.name}</h1>
                           {llegueAlMax && (
                             <span className="font-['koulen'] text-[14px] text-[#FF4444]">NO HAY SUFICIENTE STOCK</span>
                           )}

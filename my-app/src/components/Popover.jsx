@@ -17,7 +17,7 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
         <img
           src={product.img}
           alt={product.name}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-10deg] h-[70%] object-contain opacity-50 blur-[3px] select-none pointer-events-none z-0"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-10deg] h-[70%] object-contain opacity-30 blur-[3px] select-none pointer-events-none z-0"
         />
         <div className="flex flex-col items-center gap-1 z-10 my-4">
           <h1 className="font-bold text-[32px] leading-none text-center">{product.name.toUpperCase()}</h1>

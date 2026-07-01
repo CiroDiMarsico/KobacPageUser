@@ -13,7 +13,7 @@ const Bebidas = ({
     <div className="flex flex-col gap-8 px-4">
       {data.length === 0 && (
         <p className="font-['koulen'] text-[20px] text-white/30 tracking-widest text-center py-10">
-          NO HAY BEBIDAS DISPONIBLES
+          NO HAY PRODUCTOS DISPONIBLES
         </p>
       )}
       {[...new Set(data.map(p => p.category))].map(categoria => (

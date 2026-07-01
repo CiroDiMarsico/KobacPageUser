@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 
 const Vapes = ({ hidden = false }) => {
   const divRef = useRef(null);
-  const mensajeOculto = window.btoa("Hola! me pasas el catalogo de vapes");
+  const mensajeOculto = window.btoa("Hola! me pasas la pagina de vapes");
   const [pathData, setPathData] = useState({ d: "", perimeter: 0 });
 
   useEffect(() => {
