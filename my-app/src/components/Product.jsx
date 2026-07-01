@@ -55,13 +55,18 @@ const Product = ({
     }
   }, [carrito]);
 
+  const isLongText = product.name.length >= 20;
+
   return (
-    <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt']">
+    <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt']">
       <div className="bg-[#fff] rounded-3xl h-[150px] w-[100%] flex items-center justify-center">
         <img src={product.img} alt={product.name} className=" h-[150px]" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <h1 className="font-bold text-[20px] leading-none text-center">{product.name.toUpperCase()}</h1>
+        <h1 className={`font-bold leading-none text-center transition-all duration-200 ${isLongText ? 'text-[14px]' : 'text-[20px]'
+          }`}>
+          {product.name.toUpperCase()}
+        </h1>
         <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none">
           ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice)}
         </h3>
