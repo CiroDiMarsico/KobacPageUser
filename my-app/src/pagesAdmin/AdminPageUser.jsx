@@ -4,7 +4,7 @@ import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
-const API_BASE = import.meta.env.VITE_LINK
+const API_BASE = ""
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
 const Btn = ({ onClick, children, color = "purple", small = false, disabled = false }) => {

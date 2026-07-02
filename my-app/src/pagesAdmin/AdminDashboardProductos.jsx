@@ -10,7 +10,7 @@ import Loading from "../components/Loading"
 const token = () => localStorage.getItem("adminToken")
 const authH = () => ({ headers: { Authorization: `Bearer ${token()}` } })
 const fmt = (n) => `$${Number(n ?? 0).toLocaleString("es-AR")}`
-const API_BASE = import.meta.env.VITE_LINK
+const API_BASE = ""
 
 const COLORS = ["#C32CFF", "#a020d9", "#8010bb", "#60009a", "#40007a",
     "#300060", "#250050", "#1a003a", "#100025", "#080015"]

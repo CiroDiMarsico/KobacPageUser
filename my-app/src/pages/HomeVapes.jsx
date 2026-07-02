@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import grafittiKobac from "/assets/grafittiKobac.png";
 import lupaIcon from "/assets/lupa.png";
 import api from '../api/axios'
+import { useCarrito } from "../hooks/useCarrito"
 
 const HomeVapes = () => {
   const navigate = useNavigate()
@@ -43,15 +44,7 @@ const HomeVapes = () => {
   );
 
   // ─── Carrito ──────────────────────────────────────────────────────────────
-  // Carrito separado del de bebidas (clave distinta en localStorage)
-  const [carrito, setCarrito] = useState(() => {
-    const saved = localStorage.getItem("carrito_vapes");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem("carrito_vapes", JSON.stringify(carrito));
-  }, [carrito]);
+  const [carrito, setCarrito] = useCarrito("carrito_vapes")
 
   const agregarAlCarrito = (product, quantities) => {
     setCarrito(prev => {

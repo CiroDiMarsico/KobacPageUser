@@ -82,6 +82,18 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
     setOpen(false);
   };
 
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   return (
     <div className="w-[95%] bg-[#1E1E1E] rounded-3xl flex flex-col items-center justify-between p-4 font-['prompt'] gap-4">
 

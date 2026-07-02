@@ -9,15 +9,22 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
       promo.items.map(item => {
         const producto = data.find(p => p.id === item.idProduct);
         const variantesDisponibles = producto?.variants.filter(v => v.isActive && v.stock > 0) ?? [];
+        const requerido = item.quantity * cant;
+
         return [
           item.idProduct,
-          Object.fromEntries(variantesDisponibles.map(v => [
-            String(v.id),
-            Math.min(
-              initialQuantities?.selecciones?.[item.idProduct]?.[String(v.id)] ?? 0,
-              getStockDisponible(String(v.id))
-            )
-          ]))
+          Object.fromEntries(variantesDisponibles.map((v, _, arr) => {
+            const stockDisp = getStockDisponible(String(v.id));
+            // Si hay una sola variante, la ponemos al máximo requerido automáticamente
+            const esUnica = arr.length === 1;
+            const valorInicial = esUnica
+              ? Math.min(requerido, stockDisp)
+              : Math.min(
+                  initialQuantities?.selecciones?.[item.idProduct]?.[String(v.id)] ?? 0,
+                  stockDisp
+                );
+            return [String(v.id), valorInicial];
+          }))
         ];
       })
     );
@@ -61,112 +68,120 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
 
   const puedeAgregarMasPromos = () => {
     return promo.items.every(item => {
-      // Suma el stock disponible de todas las variantes del producto
       const producto = data.find(p => p.id === item.idProduct);
       if (!producto) return false;
       const stockTotalProducto = producto.variants
         .filter(v => v.isActive)
         .reduce((acc, v) => acc + (getStockDisponible(String(v.id)) ?? 0), 0);
-      // Necesitás quantity * (cantidad+1) unidades disponibles
       return stockTotalProducto >= item.quantity * (cantidad + 1);
     });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      {/* Añadido flex flex-col, h-[80vh] y overflow-hidden para mantener estables las dimensiones */}
       <div
-        className="relative bg-[#11111F] rounded-3xl p-6 w-[85vw] max-h-[85vh] overflow-y-auto flex flex-col gap-4 font-['prompt']"
+        className="relative bg-[#11111F] rounded-3xl p-6 w-[85vw] max-w-[500px] h-[80vh] flex flex-col gap-4 font-['prompt'] overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
+
+        {promo.img && (
         <img
           src={promo.img}
           alt={promo.name}
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[60%] object-contain opacity-20 blur-[3px] select-none pointer-events-none z-0"
         />
+        )}
 
-        <div className="flex flex-col items-center gap-1 z-10">
-          <h1 className="font-bold text-[28px] leading-none text-center">{promo.name.toUpperCase()}</h1>
+        {/* Cabecera Fija */}
+        <div className="flex flex-col items-center gap-1 z-10 shrink-0">
+          <h1 className="font-bold text-[26px] md:text-[28px] leading-none text-center px-4">{promo.name.toUpperCase()}</h1>
           <h3 className="font-bold text-[18px] text-[#00FF1E]">${(promo.price * cantidad).toLocaleString("es-AR")}</h3>
         </div>
 
-        <div className="flex items-center justify-between z-10 bg-white/5 rounded-2xl px-4 py-3">
+        {/* Selector de cantidad Fijo */}
+        <div className="flex items-center justify-between z-10 bg-white/5 rounded-2xl px-4 py-3 shrink-0">
           <div className="flex flex-col">
-            <span className="font-['koulen'] text-[18px]">CANTIDAD</span>
+            <span className="font-['koulen'] text-[18px]">CANTIDAD DE COMBOS</span>
             {!puedeAgregarMasPromos() && (
-              <span className="font-['koulen'] text-[14px] text-[#FF4444]">NO HAY SUFICIENTE STOCK</span>
+              <span className="font-['koulen'] text-[12px] text-[#FF4444] leading-none mt-0.5">NO HAY SUFICIENTE STOCK</span>
             )}
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => handleCantidad(Math.max(0, cantidad - 1))}
-              className="bg-[#C32CFF] rounded-full w-[38px] h-[38px] text-3xl flex items-center justify-center"
+              className="bg-[#C32CFF] rounded-full w-[38px] h-[38px] text-3xl flex items-center justify-center active:scale-95 transition-transform"
             >-</button>
             <span className="font-['koulen'] text-[20px] w-5 text-center">{cantidad}</span>
             <button
               onClick={() => handleCantidad(cantidad + 1)}
               disabled={!puedeAgregarMasPromos()}
-              className="bg-[#C32CFF] rounded-full w-[38px] h-[38px] text-3xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+              className="bg-[#C32CFF] rounded-full w-[38px] h-[38px] text-3xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
             >+</button>
           </div>
         </div>
 
+        {/* CONTENEDOR CON SCROLL: Ahora este bloque es el único que scrollea internamente */}
+        <div className="flex-1 overflow-y-auto z-10 pr-1 flex flex-col gap-5 my-1 scrollbar-none">
+          {cantidad > 0 && (
+            <div className="flex flex-col gap-5">
+              {promo.items.map(item => {
+                const producto = data.find(p => p.id === item.idProduct);
+                if (!producto) return null;
+                const variantesDisponibles = producto.variants.filter(v => v.isActive && v.stock > 0);
+                const totalElegido = Object.values(selecciones[item.idProduct] ?? {}).reduce((a, b) => a + b, 0);
+                const requerido = item.quantity * cantidad;
 
+                return (
+                  <div key={item.idProduct} className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between sticky top-0 bg-[#11111F]/90 backdrop-blur-sm py-1 z-20">
+                      <span className="font-['koulen'] text-[20px] text-white">{producto.name}</span>
+                      <span className={`font-['koulen'] text-[14px] px-2 py-0.5 rounded-md ${totalElegido === requerido ? 'text-[#00FF1E] bg-[#00FF1E]/10' : 'text-white/40 bg-white/5'}`}>
+                        {totalElegido}/{requerido}
+                      </span>
+                    </div>
 
-        {cantidad > 0 && (
-          <div className="flex flex-col gap-5 z-10">
-            {promo.items.map(item => {
-              const producto = data.find(p => p.id === item.idProduct);
-              if (!producto) return null;
-              const variantesDisponibles = producto.variants.filter(v => v.isActive && v.stock > 0);
-              const totalElegido = Object.values(selecciones[item.idProduct] ?? {}).reduce((a, b) => a + b, 0);
-              const requerido = item.quantity * cantidad;
+                    <div className="flex flex-col gap-3 pl-1">
+                      {variantesDisponibles.map(variant => {
+                        const stockDisp = getStockDisponible(String(variant.id));
+                        const yaElegido = selecciones[item.idProduct]?.[String(variant.id)] ?? 0;
+                        const llegueAlMax = yaElegido > 0 && yaElegido >= stockDisp;
 
-              return (
-                <div key={item.idProduct} className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-['koulen'] text-[22px]">{producto.name}</span>
-                    <span className={`font-['koulen'] text-[14px] ${totalElegido === requerido ? 'text-[#00FF1E]' : 'text-white/40'}`}>
-                      {totalElegido}/{requerido}
-                    </span>
+                        return (
+                          <div key={variant.id} className="flex items-center justify-between gap-2 py-1">
+                            <div className="flex flex-col max-w-[55%]">
+                              <h1 className="font-['koulen'] text-[17px] text-white/70 leading-tight">{variant.name}</h1>
+                              {llegueAlMax && (
+                                <span className="font-['koulen'] text-[11px] text-[#FF4444] leading-none mt-0.5">SIN STOCK DISPONIBLE</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <button
+                                onClick={() => increment(item.idProduct, String(variant.id))}
+                                disabled={totalElegido >= requerido || yaElegido >= stockDisp}
+                                className="bg-[#C32CFF] rounded-full w-[36px] h-[36px] text-2xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
+                              >+</button>
+                              <span className="font-['koulen'] text-[18px] w-5 text-center">{yaElegido}</span>
+                              <button
+                                onClick={() => decrement(item.idProduct, String(variant.id))}
+                                className="bg-[#C32CFF] rounded-full w-[36px] h-[36px] text-2xl flex items-center justify-center active:scale-95 transition-transform"
+                                disabled={yaElegido === 0}
+                              >-</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="border-b border-white/5 pt-1" />
                   </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-                  {variantesDisponibles.map(variant => {
-                    const stockDisp = getStockDisponible(String(variant.id));
-                    const yaElegido = selecciones[item.idProduct]?.[String(variant.id)] ?? 0;
-                    const llegueAlMax = yaElegido > 0 && yaElegido >= stockDisp;
-
-                    return (
-                      <div key={variant.id} className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <h1 className="font-['koulen'] text-[18px] text-white/70">{variant.name}</h1>
-                          {llegueAlMax && (
-                            <span className="font-['koulen'] text-[14px] text-[#FF4444]">NO HAY SUFICIENTE STOCK</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => increment(item.idProduct, String(variant.id))}
-                            disabled={totalElegido >= requerido || yaElegido >= stockDisp}
-                            className="bg-[#C32CFF] rounded-full w-[40px] h-[40px] text-3xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
-                          >+</button>
-                          <span className="font-['koulen'] text-[18px] w-4 text-center">{yaElegido}</span>
-                          <button
-                            onClick={() => decrement(item.idProduct, String(variant.id))}
-                            className="bg-[#C32CFF] rounded-full w-[40px] h-[40px] text-3xl flex items-center justify-center"
-                          >-</button>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  <div className="border-b border-white/10" />
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="z-10 flex justify-center">
+        {/* Botón de acción Fijo en el footer */}
+        <div className="z-10 flex justify-center pt-2 pb-1 shrink-0 mt-auto">
           <Button
             text="AGREGAR"
             width="150px"
@@ -179,7 +194,7 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
           />
         </div>
 
-        <button className="font-['koulen'] text-2xl text-[#C32CFF] z-10 absolute top-4 right-5" onClick={onClose}>X</button>
+        <button className="font-['koulen'] text-2xl text-[#C32CFF] z-20 absolute top-4 right-5 p-1 hover:scale-110 transition-transform" onClick={onClose}>X</button>
       </div>
     </div >
   );

@@ -9,6 +9,7 @@ import Cart from "../components/Cart";
 import grafittiKobac from "/assets/grafittiKobac.png";
 import lupaIcon from "/assets/lupa.png";
 import api from '../api/axios'
+import { useCarrito } from "../hooks/useCarrito"
 const Home = () => {
   // ------------------------------
   //-------------DATOS-------------
@@ -62,15 +63,7 @@ const Home = () => {
 
   const [show, setShow] = useState("promos");
 
-  const [carrito, setCarrito] = useState(() => {
-    const saved = localStorage.getItem("carrito");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Cada vez que cambia el carrito, lo guarda
-  useEffect(() => {
-    localStorage.setItem("carrito", JSON.stringify(carrito));
-  }, [carrito]);
+  const [carrito, setCarrito] = useCarrito("carrito");
 
   const agregarAlCarrito = (product, quantities) => {
     setCarrito(prev => {

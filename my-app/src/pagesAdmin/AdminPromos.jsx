@@ -6,7 +6,7 @@ const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
 const fmt = (n) => n != null ? `$${Number(n).toLocaleString("es-AR")}` : "—"
 const fmtPct = (n) => n != null ? `${n}%` : "—"
-const API_BASE = import.meta.env.VITE_LINK
+const API_BASE = ""
 
 const Tag = ({ active }) => (
     <span className={`font-['koulen'] text-[11px] px-2 py-0.5 rounded-full ${active
