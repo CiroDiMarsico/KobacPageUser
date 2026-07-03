@@ -19,35 +19,31 @@ const getSalesChart = async (rubro, period) => {
         interval  = '6 MONTH'
     }
 
+    // Reescrito con JOIN en lugar de subquery correlacionado dentro de SUM()
+    // Primero calculamos el costo por venta en una subquery, luego lo joinemos
     const [rows] = await pool.query(`
         SELECT
-            ${labelExpr}                               AS label,
-            SUM(s.total - s.discount_amount)           AS ventas,
-            SUM(
-                (
-                    SELECT COALESCE(SUM(sm.quantity * l.purchase_price), 0)
-                    FROM stock_movements sm
-                    JOIN lots l ON l.id = sm.lot_id
-                    JOIN sale_items si2 ON si2.id = sm.sale_item_id
-                    WHERE si2.sale_id = s.id
-                    AND sm.type = 'out' AND sm.reason = 'sale'
-                )
-            ) AS costo,
-            SUM(s.total - s.discount_amount) - SUM(
-                (
-                    SELECT COALESCE(SUM(sm.quantity * l.purchase_price), 0)
-                    FROM stock_movements sm
-                    JOIN lots l ON l.id = sm.lot_id
-                    JOIN sale_items si2 ON si2.id = sm.sale_item_id
-                    WHERE si2.sale_id = s.id
-                    AND sm.type = 'out' AND sm.reason = 'sale'
-                )
-            ) AS ganancia,
-            COUNT(DISTINCT s.id) AS cantidad    -- 👈 era COUNT(*)
+            ${labelExpr}                                        AS label,
+            SUM(s.total - s.discount_amount)                    AS ventas,
+            SUM(COALESCE(costo_venta.costo, 0))                 AS costo,
+            SUM(s.total - s.discount_amount)
+                - SUM(COALESCE(costo_venta.costo, 0))           AS ganancia,
+            COUNT(DISTINCT s.id)                                AS cantidad
         FROM sales s
-        WHERE s.rubro = ?
-            AND s.status = 'delivered'
-            AND s.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
+        LEFT JOIN (
+            SELECT
+                si.sale_id,
+                SUM(sm.quantity * l.purchase_price) AS costo
+            FROM stock_movements sm
+            JOIN lots l        ON l.id  = sm.lot_id
+            JOIN sale_items si ON si.id = sm.sale_item_id
+            WHERE sm.type   = 'out'
+              AND sm.reason = 'sale'
+            GROUP BY si.sale_id
+        ) AS costo_venta ON costo_venta.sale_id = s.id
+        WHERE s.rubro  = ?
+          AND s.status = 'delivered'
+          AND s.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
         GROUP BY ${groupExpr}
         ORDER BY ${groupExpr} ASC
     `, [rubro])
@@ -116,7 +112,6 @@ const getKPIs = async (rubro, period) => {
 
 // ─── DASHBOARD PRODUCTOS ──────────────────────────────────────────────────────
 
-// Productos más vendidos — con ganancia real por producto
 const getTopProducts = async (rubro, period) => {
     const intervalMap = { siempre: null, mes: '1 MONTH', semana: '1 WEEK' }
     const interval = intervalMap[period]

@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react"
 import api from "../api/axios"
-import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
 const fmt = (n) => n != null ? `$${Number(n).toLocaleString("es-AR")}` : "—"
 const fmtDate = (d) => new Date(d).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })
-const API_BASE = ""
+const API_BASE = 'http://localhost:3000'
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
 const Btn = ({ onClick, children, color = "purple", small = false, disabled = false }) => {
@@ -301,6 +300,9 @@ const ReciboScanner = ({ products, onItemsDetected, onClose }) => {
                         <h2 className="font-['koulen'] text-[22px] tracking-wider text-amber-400">
                             ESCANEAR RECIBO
                         </h2>
+                        <p className="font-['koulen'] text-[12px] text-white/30">
+                            Subí una foto o PDF — Gemini extrae los productos automáticamente
+                        </p>
                     </div>
                     <button onClick={onClose} className="font-['koulen'] text-[20px] text-white/40 hover:text-white transition-colors">✕</button>
                 </div>
@@ -566,39 +568,71 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
     const [error, setError] = useState("")
     const [showScanner, setShowScanner] = useState(false)
 
+    // TC global para compras de vapes (por factura)
+    const [exchangeRate, setExchangeRate] = useState("")
+
     const [showNewSupplier, setShowNewSupplier] = useState(false)
     const [newSupplierName, setNewSupplierName] = useState("")
     const [newSupplierPhone, setNewSupplierPhone] = useState("")
     const [savingSupplier, setSavingSupplier] = useState(false)
+
+    const isVapes = rubro === "vapes"
 
     const allVariants = products.flatMap(p =>
         p.variants.filter(v => v.isActive).map(v => ({
             variantId: v.id,
             productName: p.name,
             variantName: v.name,
-            lastPrice: v.lastPurchasePrice
+            lastPrice: v.lastPurchasePrice,
+            lastPriceUsd: v.lastPriceUsd,
         }))
     )
 
     const addItem = () => {
-        setItems(prev => [...prev, { variantId: "", productName: "", variantName: "", quantity: 1, unitPrice: "" }])
+        setItems(prev => [...prev, { variantId: "", productName: "", variantName: "", quantity: 1, unitPrice: "", priceUsd: "" }])
     }
 
     const removeItem = (i) => setItems(prev => prev.filter((_, idx) => idx !== i))
 
     const updateVariant = (i, variantId) => {
         const found = allVariants.find(v => v.variantId === Number(variantId))
+        const tc = Number(exchangeRate) || 0
+        const usd = found?.lastPriceUsd ?? ""
+        const ars = usd && tc > 0 ? String(Math.round(Number(usd) * tc)) : (found?.lastPrice != null ? String(found.lastPrice) : "")
         setItems(prev => prev.map((item, idx) => idx !== i ? item : {
             ...item,
             variantId: Number(variantId),
             productName: found?.productName ?? "",
             variantName: found?.variantName ?? "",
-            unitPrice: found?.lastPrice != null ? String(found.lastPrice) : ""
+            priceUsd: usd ? String(usd) : "",
+            unitPrice: ars
         }))
     }
 
     const updateItem = (i, field, value) =>
         setItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
+
+    // Cuando cambia USD de un item, recalcula ARS si hay TC
+    const updateItemUsd = (i, usdValue) => {
+        const tc = Number(exchangeRate) || 0
+        const ars = tc > 0 && usdValue !== "" ? String(Math.round(Number(usdValue) * tc)) : ""
+        setItems(prev => prev.map((item, idx) => idx !== i ? item : {
+            ...item,
+            priceUsd: usdValue,
+            unitPrice: ars || item.unitPrice
+        }))
+    }
+
+    // Cuando cambia TC, recalcula ARS de todos los items con USD
+    const handleExchangeRateChange = (val) => {
+        setExchangeRate(val)
+        const tc = Number(val) || 0
+        if (tc > 0) {
+            setItems(prev => prev.map(item =>
+                item.priceUsd ? { ...item, unitPrice: String(Math.round(Number(item.priceUsd) * tc)) } : item
+            ))
+        }
+    }
 
     const total = items.reduce((acc, i) => {
         const q = Number(i.quantity) || 0
@@ -633,7 +667,9 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
                 items: items.map(i => ({
                     variantId: i.variantId,
                     quantity: Number(i.quantity),
-                    unitPrice: Number(i.unitPrice)
+                    unitPrice: Number(i.unitPrice),
+                    priceUsd: i.priceUsd ? Number(i.priceUsd) : null,
+                    exchangeRate: isVapes && exchangeRate ? Number(exchangeRate) : null,
                 }))
             }, authHeaders())
             onSaved()
@@ -649,6 +685,7 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
             variantName: si.variantName,
             quantity: si.quantity,
             unitPrice: String(si.unitPrice || ""),
+            priceUsd: "",
         }))
         setItems(prev => [...prev, ...newItems])
     }
@@ -660,12 +697,37 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
                 {/* Banner scanner */}
                 <div className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/20 rounded-2xl px-4 py-3">
                     <div className="flex flex-col flex-1 min-w-0">
-                        <p className="font-['koulen'] text-[14px] text-amber-400">CARGA AUTOMATICA CON IA</p>
+                        <p className="font-['koulen'] text-[14px] text-amber-400">CARGA AUTOMÁTICA CON IA</p>
+                        <p className="font-['koulen'] text-[11px] text-white/30">
+                            Gemini lee el recibo y pre-carga los productos
+                        </p>
                     </div>
                     <Btn small color="amber" onClick={() => setShowScanner(true)}>
                         📄 ESCANEAR RECIBO
                     </Btn>
                 </div>
+
+                {/* Tipo de cambio — solo vapes */}
+                {isVapes && (
+                    <div className="flex items-center gap-3 bg-green-500/5 border border-green-500/20 rounded-2xl px-4 py-3">
+                        <div className="flex flex-col flex-1 min-w-0">
+                            <p className="font-['koulen'] text-[13px] text-green-400">TIPO DE CAMBIO (para esta factura)</p>
+                            <p className="font-['koulen'] text-[11px] text-white/30">
+                                Al cargar el TC, el precio ARS se calcula solo desde USD
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="font-['koulen'] text-[13px] text-white/40">$</span>
+                            <input
+                                type="number" min="0"
+                                value={exchangeRate}
+                                onChange={e => handleExchangeRateChange(e.target.value)}
+                                placeholder="1200"
+                                className="bg-[#1E1E2E] border border-green-500/30 rounded-xl h-[38px] px-3 font-['koulen'] text-[16px] text-white outline-none focus:border-green-500/60 w-[110px]"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Separador si ya hay items */}
                 {items.length > 0 && (
@@ -710,7 +772,7 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
 
                     {items.length === 0 && (
                         <p className="font-['koulen'] text-[14px] text-white/20 text-center py-3">
-                            Agregar productos
+                            Escaneá un recibo o agregá manualmente
                         </p>
                     )}
 
@@ -728,15 +790,26 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
                                 ))}
                             </select>
 
-                            <div className="flex gap-2">
-                                <div className="flex flex-col gap-1 flex-1">
+                            <div className="flex gap-2 flex-wrap">
+                                <div className="flex flex-col gap-1" style={{minWidth:'70px', flex:1}}>
                                     <label className="font-['koulen'] text-[11px] text-white/30">CANTIDAD</label>
                                     <input type="number" min="1" value={item.quantity}
                                         onChange={e => updateItem(i, 'quantity', e.target.value)}
                                         className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full" />
                                 </div>
-                                <div className="flex flex-col gap-1 flex-1">
-                                    <label className="font-['koulen'] text-[11px] text-white/30">PRECIO UNIT.</label>
+                                {isVapes && (
+                                    <div className="flex flex-col gap-1" style={{minWidth:'80px', flex:1}}>
+                                        <label className="font-['koulen'] text-[11px] text-green-400/70">USD</label>
+                                        <input type="number" min="0" value={item.priceUsd}
+                                            onChange={e => updateItemUsd(i, e.target.value)}
+                                            placeholder="0"
+                                            className="bg-[#1E1E2E] border border-green-500/30 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-green-400 outline-none focus:border-green-500/60 w-full" />
+                                    </div>
+                                )}
+                                <div className="flex flex-col gap-1" style={{minWidth:'90px', flex:1}}>
+                                    <label className="font-['koulen'] text-[11px] text-white/30">
+                                        {isVapes ? "ARS (auto)" : "PRECIO UNIT."}
+                                    </label>
                                     <input type="number" min="0" value={item.unitPrice}
                                         onChange={e => updateItem(i, 'unitPrice', e.target.value)}
                                         className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full" />
@@ -958,9 +1031,7 @@ const AdminStock = () => {
                 className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[44px] px-5 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full max-w-[400px]" />
 
             {loading ? (
-                <div className="flex items-center justify-center h-[463px]">
-                    <Loading size="small" />
-                </div>
+                <p className="font-['koulen'] text-white/30 tracking-widest text-center py-10">CARGANDO...</p>
             ) : (
                 <div className="flex flex-col gap-8">
                     {Object.entries(grouped).map(([cat, prods]) => (
