@@ -5,7 +5,7 @@ const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
 const fmt = (n) => n != null ? `$${Number(n).toLocaleString("es-AR")}` : "—"
 const fmtDate = (d) => new Date(d).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })
-const API_BASE = 'http://localhost:3000'
+const API_BASE = ""
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
 const Btn = ({ onClick, children, color = "purple", small = false, disabled = false }) => {
