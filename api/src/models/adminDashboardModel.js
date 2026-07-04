@@ -19,8 +19,6 @@ const getSalesChart = async (rubro, period) => {
         interval  = '6 MONTH'
     }
 
-    // Reescrito con JOIN en lugar de subquery correlacionado dentro de SUM()
-    // Primero calculamos el costo por venta en una subquery, luego lo joinemos
     const [rows] = await pool.query(`
         SELECT
             ${labelExpr}                                        AS label,
@@ -44,12 +42,14 @@ const getSalesChart = async (rubro, period) => {
         WHERE s.rubro  = ?
           AND s.status = 'delivered'
           AND s.created_at >= DATE_SUB(NOW(), INTERVAL ${interval})
-        GROUP BY ${groupExpr}
+        GROUP BY ${groupExpr}, ${labelExpr}
         ORDER BY ${groupExpr} ASC
     `, [rubro])
 
+    if (!rows || rows.length === 0) return []
+
     return rows.map(r => ({
-        label:    r.label,
+        label:    r.label    ?? '',
         ventas:   Number(r.ventas   ?? 0),
         costo:    Number(r.costo    ?? 0),
         ganancia: Number(r.ganancia ?? 0),
