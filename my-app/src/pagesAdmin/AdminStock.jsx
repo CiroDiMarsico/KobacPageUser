@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import api from "../api/axios"
+import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
@@ -1031,7 +1032,9 @@ const AdminStock = () => {
                 className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[44px] px-5 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full max-w-[400px]" />
 
             {loading ? (
-                <p className="font-['koulen'] text-white/30 tracking-widest text-center py-10">CARGANDO...</p>
+                <div className="flex items-center justify-center h-[463px]">
+                    <Loading size="small" />
+                </div>
             ) : (
                 <div className="flex flex-col gap-8">
                     {Object.entries(grouped).map(([cat, prods]) => (

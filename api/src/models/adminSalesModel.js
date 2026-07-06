@@ -274,20 +274,21 @@ const updateSale = async (id, { itemPrices, payments, total }) => {
 
 // ─── CREATE MANUAL ────────────────────────────────────────────────────────────
 // Asegurate que la función lo recibe:
-const createManual = async ({ clientName, clientPhone, location, rubro, items, payments, shippingPrice, discountAmount, isWholesale, exchangeRate }) => {
+// Reemplazar SOLO la función createManual en adminSalesModel.js
+// Cambios: acepta totalOverride y lo usa en lugar del calculado si viene
+
+const createManual = async ({ clientName, clientPhone, location, rubro, items, payments, shippingPrice, discountAmount, isWholesale, exchangeRate, totalOverride }) => {
     const conn = await pool.getConnection()
     try {
         await conn.beginTransaction()
 
         let clientId = null
 
-        // cliente opcional
         if (clientName || clientPhone) {
             if (clientPhone) {
                 const [[existing]] = await conn.query(`SELECT id FROM clients WHERE phone = ?`, [clientPhone])
                 if (existing) {
                     clientId = existing.id
-                    // actualizar nombre si cambió
                     if (clientName) await conn.query(`UPDATE clients SET name = ? WHERE id = ?`, [clientName, clientId])
                 } else {
                     const [res] = await conn.query(
@@ -305,7 +306,12 @@ const createManual = async ({ clientName, clientPhone, location, rubro, items, p
         }
 
         const itemsTotal = items.reduce((acc, i) => acc + i.unitPrice * i.quantity, 0)
-        const total = itemsTotal + Number(shippingPrice || 0) - Number(discountAmount || 0)
+        const calculatedTotal = itemsTotal + Number(shippingPrice || 0) - Number(discountAmount || 0)
+
+        // Si viene totalOverride (total editado manualmente en el admin), usarlo
+        // Si no, usar el calculado normalmente
+        const total = totalOverride != null ? totalOverride : calculatedTotal
+
         const weekCode = buildWeekCode()
 
         const [saleRes] = await conn.query(`

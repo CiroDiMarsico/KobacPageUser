@@ -138,9 +138,7 @@ const AdminDashboardGanancias = () => {
 
             {/* KPIs */}
             {loading ? (
-                <div className="flex items-center justify-center h-[463px]">
                     <Loading size="small" />
-                </div>
             ) : kpis && (
                 <div className="flex flex-wrap gap-3">
                     <KPICard label="GANANCIA" value={fmt(kpis.totalGanancia)}

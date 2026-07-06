@@ -76,6 +76,100 @@ const Modal = ({ title, onClose, children, wide = false }) => (
     </div>
 )
 
+// ─── Buscador de variantes ────────────────────────────────────────────────────
+const VariantSearch = ({ products, value, onChange, placeholder = "Buscar producto..." }) => {
+    const [query, setQuery] = useState("")
+    const [open, setOpen] = useState(false)
+    const ref = useRef()
+
+    // Aplanar productos en lista de variantes buscables
+    const allVariants = products.flatMap(p =>
+        p.variants
+            .filter(v => v.isActive && v.stock > 0)
+            .map(v => ({
+                variantId: v.id,
+                label: `${p.name} — ${v.name}`,
+                productName: p.name,
+                variantName: v.name,
+                salePrice: p.salePrice,
+                stock: v.stock,
+            }))
+    )
+
+    const filtered = query.trim() === ""
+        ? allVariants
+        : allVariants.filter(v =>
+            v.label.toLowerCase().includes(query.toLowerCase())
+        )
+
+    // Cerrar al hacer click afuera
+    useEffect(() => {
+        const handleClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+        document.addEventListener("mousedown", handleClick)
+        return () => document.removeEventListener("mousedown", handleClick)
+    }, [])
+
+    const selected = allVariants.find(v => v.variantId === value)
+
+    const handleSelect = (variant) => {
+        onChange(variant)
+        setQuery("")
+        setOpen(false)
+    }
+
+    const handleClear = () => {
+        onChange(null)
+        setQuery("")
+    }
+
+    return (
+        <div ref={ref} className="relative flex-1">
+            {selected && !open ? (
+                // Mostrar seleccionado
+                <div className="flex items-center justify-between bg-[#1E1E2E] border border-[#C32CFF]/40 rounded-xl h-[38px] px-3">
+                    <span className="font-['koulen'] text-[14px] text-white truncate">{selected.label}</span>
+                    <button onClick={handleClear} className="font-['koulen'] text-[14px] text-white/30 hover:text-white ml-2 shrink-0">✕</button>
+                </div>
+            ) : (
+                <input
+                    type="text"
+                    value={query}
+                    placeholder={selected ? selected.label : placeholder}
+                    onChange={e => { setQuery(e.target.value); setOpen(true) }}
+                    onFocus={() => setOpen(true)}
+                    className="w-full bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60"
+                />
+            )}
+
+            {open && (
+                <div className="absolute z-50 top-[42px] left-0 right-0 bg-[#0A0A14] border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-[220px] overflow-y-auto">
+                    {filtered.length === 0 ? (
+                        <p className="font-['koulen'] text-[13px] text-white/30 text-center py-4">Sin resultados</p>
+                    ) : (
+                        filtered.map(v => (
+                            <button
+                                key={v.variantId}
+                                onClick={() => handleSelect(v)}
+                                className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.05] transition-colors text-left border-b border-white/5 last:border-0"
+                            >
+                                <div className="flex flex-col min-w-0">
+                                    <span className="font-['koulen'] text-[14px] text-white truncate">{v.label}</span>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0 ml-2">
+                                    <span className={`font-['koulen'] text-[12px] ${v.stock === 0 ? "text-red-400" : v.stock <= 5 ? "text-yellow-400" : "text-green-400"}`}>
+                                        {v.stock}u
+                                    </span>
+                                    <span className="font-['koulen'] text-[13px] text-white/40">{fmt(v.salePrice)}</span>
+                                </div>
+                            </button>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
 // ─── Editor de pagos ──────────────────────────────────────────────────────────
 const PaymentsEditor = ({ payments, onChange }) => {
     const addPayment = () => onChange([...payments, { method: "cash", amount: "" }])
@@ -212,18 +306,18 @@ const EditSaleModal = ({ sale, onClose, onSaved }) => {
     )
 }
 
-// ─── Modal nueva venta — con mayorista + TC para vapes ───────────────────────
+// ─── Modal nueva venta ────────────────────────────────────────────────────────
 const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
     const isVapes = rubro === 'vapes'
 
     const [clientName, setClientName] = useState("")
     const [clientPhone, setClientPhone] = useState("")
     const [location, setLocation] = useState("")
-    const [shippingPrice, setShippingPrice] = useState("")
     const [isWholesale, setIsWholesale] = useState(false)
     const [exchangeRate, setExchangeRate] = useState("")
     const [items, setItems] = useState([])
     const [payments, setPayments] = useState([{ method: "cash", amount: "" }])
+    const [totalOverride, setTotalOverride] = useState("") // total manual
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
 
@@ -234,21 +328,21 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
     }])
     const removeItem = (i) => setItems(prev => prev.filter((_, idx) => idx !== i))
 
-    const updateVariant = (i, variantId) => {
-        let salePrice = ""
-        let stock = null
-        for (const p of products) {
-            const v = p.variants.find(v => v.id === Number(variantId))
-            if (v) { salePrice = String(p.salePrice); stock = v.stock; break }
+    const handleVariantSelect = (i, variant) => {
+        if (!variant) {
+            setItems(prev => prev.map((item, idx) => idx !== i ? item : {
+                ...item, variantId: "", unitPrice: "", priceUsd: "", stock: null
+            }))
+            return
         }
-        // si es mayorista USD, el unitPrice lo calcula del USD × TC
         const tc = Number(exchangeRate) || 0
         setItems(prev => prev.map((item, idx) => idx !== i ? item : {
-            ...item, variantId: Number(variantId),
+            ...item,
+            variantId: variant.variantId,
             unitPrice: showUsd && item.priceUsd && tc
                 ? String(Math.round(Number(item.priceUsd) * tc * 100) / 100)
-                : salePrice,
-            stock
+                : String(variant.salePrice),
+            stock: variant.stock
         }))
     }
 
@@ -256,7 +350,6 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
         setItems(prev => prev.map((item, idx) => {
             if (idx !== i) return item
             const updated = { ...item, [field]: value }
-            // si cambia priceUsd en modo mayorista, recalcular unitPrice
             if (showUsd && field === 'priceUsd' && exchangeRate) {
                 const tc = Number(exchangeRate) || 0
                 const usd = Number(value) || 0
@@ -266,7 +359,6 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
         }))
     }
 
-    // cuando cambia TC, recalcular todos los unitPrice de items con priceUsd
     const handleTCChange = (val) => {
         setExchangeRate(val)
         if (!showUsd) return
@@ -280,7 +372,8 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
 
     const subtotal = items.reduce((acc, i) => acc + (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0), 0)
     const subtotalUsd = showUsd ? items.reduce((acc, i) => acc + (Number(i.quantity) || 0) * (Number(i.priceUsd) || 0), 0) : 0
-    const total = subtotal + Number(shippingPrice || 0)
+    // total: si hay override manual lo usa, si no usa el subtotal
+    const total = totalOverride !== "" ? Number(totalOverride) : subtotal
     const paymentsTotal = payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0)
     const paymentsDiff = total - paymentsTotal
 
@@ -298,7 +391,7 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                 rubro,
                 isWholesale,
                 exchangeRate: showUsd ? Number(exchangeRate) : null,
-                shippingPrice: Number(shippingPrice || 0),
+                shippingPrice: 0,
                 discountAmount: 0,
                 items: items.map(i => ({
                     variantId: i.variantId,
@@ -306,7 +399,8 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                     unitPrice: Number(i.unitPrice),
                     promoId: null
                 })),
-                payments: payments.map(p => ({ method: p.method, amount: Number(p.amount) }))
+                payments: payments.map(p => ({ method: p.method, amount: Number(p.amount) })),
+                total
             }, authHeaders())
             onSaved()
         } catch (e) {
@@ -331,7 +425,6 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                 <div className={`flex flex-col gap-3 rounded-2xl px-4 py-3 border transition-colors
                     ${isWholesale ? "bg-green-500/5 border-green-500/20" : "bg-white/[0.03] border-white/10"}`}>
                     <Toggle label="VENTA MAYORISTA (USD)" value={isWholesale} onChange={setIsWholesale} accent />
-
                     {isWholesale && (
                         <div className="flex flex-col gap-1">
                             <label className="font-['koulen'] text-[11px] text-white/40 tracking-wider">TIPO DE CAMBIO</label>
@@ -360,35 +453,15 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                 {items.map((item, i) => (
                     <div key={i} className="flex flex-col gap-2 bg-white/[0.03] border border-white/10 rounded-xl p-3">
                         <div className="flex items-center gap-2">
-                            <select value={item.variantId} onChange={e => updateVariant(i, e.target.value)}
-                                className="flex-1 bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60">
-                                <option value="">— elegir producto/variante —</option>
-                                {(() => {
-                                    const grouped = products.reduce((acc, p) => {
-                                        const cat = p.category ?? "Sin categoría"
-                                        const variants = p.variants.filter(v => v.isActive && v.stock > 0)
-                                        if (variants.length === 0) return acc
-                                        if (!acc[cat]) acc[cat] = []
-                                        acc[cat].push({ p, variants })
-                                        return acc
-                                    }, {})
-
-                                    return Object.entries(grouped).map(([cat, items]) => (
-                                        <optgroup key={cat} label={`── ${cat.toUpperCase()} ──`}>
-                                            {items.map(({ p, variants }) =>
-                                                variants.map(v => (
-                                                    <option key={v.id} value={v.id}>
-                                                        {v.stock} {p.name} — {v.name}{v.description ? ` (${v.description})` : ""}
-                                                    </option>
-                                                ))
-                                            )}
-                                        </optgroup>
-                                    ))
-                                })()}
-                            </select>
+                            <VariantSearch
+                                products={products}
+                                value={item.variantId || null}
+                                onChange={(variant) => handleVariantSelect(i, variant)}
+                                placeholder="Buscar producto..."
+                            />
                             {item.stock != null && (
                                 <span className={`font-['koulen'] text-[13px] shrink-0 ${item.stock === 0 ? "text-red-400" : item.stock <= 5 ? "text-yellow-400" : "text-green-400"}`}>
-                                    stock: {item.stock}
+                                    {item.stock}u
                                 </span>
                             )}
                             <button onClick={() => removeItem(i)}
@@ -402,7 +475,6 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                                     className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full" />
                             </div>
 
-                            {/* Campo USD — solo mayorista vapes */}
                             {showUsd && (
                                 <div className="flex flex-col gap-1 flex-1 min-w-[90px]">
                                     <label className="font-['koulen'] text-[11px] text-green-400/60">PRECIO USD</label>
@@ -417,7 +489,7 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
 
                             <div className="flex flex-col gap-1 flex-1 min-w-[100px]">
                                 <label className="font-['koulen'] text-[11px] text-white/30">
-                                    {showUsd ? "PRECIO PESOS (auto)" : "PRECIO UNIT."}
+                                    {showUsd ? "PESOS (auto)" : "PRECIO UNIT."}
                                 </label>
                                 <div className="relative">
                                     <span className="absolute left-2 top-1/2 -translate-y-1/2 font-['koulen'] text-[12px] text-white/30">$</span>
@@ -448,20 +520,53 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                 <Btn small color="ghost" onClick={addItem}>+ AGREGAR ITEM</Btn>
             </div>
 
-            <Input label="ENVÍO" value={shippingPrice} onChange={setShippingPrice} type="number" min="0" placeholder="0" />
             <PaymentsEditor payments={payments} onChange={setPayments} />
 
+            {/* Total con opción de editar */}
             {items.length > 0 && (
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2">
-                        <span className="font-['koulen'] text-[14px] text-white/50">TOTAL</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-['koulen'] text-[14px] text-white/50">TOTAL</span>
+                            {totalOverride !== "" && (
+                                <button
+                                    onClick={() => setTotalOverride("")}
+                                    className="font-['koulen'] text-[11px] text-white/30 hover:text-white"
+                                >
+                                    (auto)
+                                </button>
+                            )}
+                        </div>
                         <div className="flex items-center gap-3">
                             {showUsd && subtotalUsd > 0 && (
                                 <span className="font-['koulen'] text-[14px] text-green-400">{fmtUsd(subtotalUsd)}</span>
                             )}
-                            <span className="font-['koulen'] text-[20px] text-[#00FF1E]">{fmt(total)}</span>
+                            {totalOverride !== "" ? (
+                                <input
+                                    type="number" min="0"
+                                    value={totalOverride}
+                                    onChange={e => setTotalOverride(e.target.value)}
+                                    className="bg-[#1E1E2E] border border-[#C32CFF]/40 rounded-xl h-[34px] px-3 font-['koulen'] text-[18px] text-[#00FF1E] outline-none focus:border-[#C32CFF]/60 w-[140px] text-right"
+                                />
+                            ) : (
+                                <button
+                                    onClick={() => setTotalOverride(String(subtotal))}
+                                    className="font-['koulen'] text-[20px] text-[#00FF1E] hover:text-green-300 transition-colors"
+                                    title="Tocar para editar"
+                                >
+                                    {fmt(total)}
+                                </button>
+                            )}
                         </div>
                     </div>
+
+                    {totalOverride !== "" && subtotal !== Number(totalOverride) && (
+                        <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2">
+                            <span className="font-['koulen'] text-[12px] text-white/40">CALCULADO</span>
+                            <span className="font-['koulen'] text-[13px] text-yellow-400/70">{fmt(subtotal)}</span>
+                        </div>
+                    )}
+
                     {Math.abs(paymentsDiff) > 0.5 && (
                         <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2">
                             <span className="font-['koulen'] text-[13px] text-white/50">DIFERENCIA PAGO / TOTAL</span>
@@ -805,30 +910,22 @@ const AdminVentas = () => {
     }
 
     useEffect(() => {
-        // cargar productos con stock mergeado
         Promise.all([
             api.get(`/admin/products?rubro=${rubro}`, authHeaders()),
             api.get(`/admin/stock?rubro=${rubro}`, authHeaders()),
         ]).then(([prodRes, stockRes]) => {
             const stockMap = {}
             stockRes.data.forEach(p => {
-                p.variants.forEach(v => {
-                    stockMap[v.id] = v.stock
-                })
+                p.variants.forEach(v => { stockMap[v.id] = v.stock })
             })
             const merged = prodRes.data.map(p => ({
                 ...p,
-                variants: p.variants.map(v => ({
-                    ...v,
-                    stock: stockMap[v.id] ?? 0
-                }))
+                variants: p.variants.map(v => ({ ...v, stock: stockMap[v.id] ?? 0 }))
             }))
             setProducts(merged)
         })
 
-        // 👇 esto también tiene que estar
         fetchInProcess()
-
         pollingRef.current = setInterval(() => fetchInProcess(true), 20000)
         return () => clearInterval(pollingRef.current)
     }, [rubro])

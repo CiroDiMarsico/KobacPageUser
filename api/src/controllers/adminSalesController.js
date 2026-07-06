@@ -61,10 +61,24 @@ const updateSale = async (req, res) => {
 
 const createManual = async (req, res) => {
     try {
-        const { clientName, clientPhone, location, rubro, items, payments, shippingPrice, discountAmount, isWholesale, exchangeRate } = req.body
-        if (!items || items.length === 0) return res.status(400).json({ error: 'La venta debe tener al menos un item' })
-        if (!payments || payments.length === 0) return res.status(400).json({ error: 'Indicá el método de pago' })
-        const id = await adminSalesModel.createManual({ clientName, clientPhone, location, rubro, items, payments, shippingPrice, discountAmount, isWholesale, exchangeRate })
+        const {
+            clientName, clientPhone, location, rubro,
+            items, payments, shippingPrice, discountAmount,
+            isWholesale, exchangeRate,
+            total  // ← total manual opcional desde el admin
+        } = req.body
+
+        if (!items || items.length === 0)
+            return res.status(400).json({ error: 'La venta debe tener al menos un item' })
+        if (!payments || payments.length === 0)
+            return res.status(400).json({ error: 'Indicá el método de pago' })
+
+        const id = await adminSalesModel.createManual({
+            clientName, clientPhone, location, rubro,
+            items, payments, shippingPrice, discountAmount,
+            isWholesale, exchangeRate,
+            totalOverride: total != null ? Number(total) : null  // ← pasa el override
+        })
         res.status(201).json({ ok: true, id })
     } catch (e) {
         console.error(e)
