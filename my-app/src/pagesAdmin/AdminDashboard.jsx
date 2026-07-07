@@ -13,6 +13,7 @@ import AdminClientes from "./AdminClientes"
 import AdminGastos from "./AdminGastos"
 import AdminCierreCaja from "./AdminCierreCaja"
 import AdminDescuentos from "./AdminDescuentos"
+import AdminCalculadora from "./AdminCalculadora"
 
 const SECCIONES = {
   "PRODUCTOS": <AdminProductos />,
@@ -111,6 +112,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <AdminCalculadora />
           <span className="font-['koulen'] text-[14px] text-white/40 tracking-wider">{username.toUpperCase()}</span>
           <button onClick={handleLogout}
             className="font-['koulen'] text-[14px] text-[#FF4444] border border-[#FF4444]/30 rounded-xl px-4 py-1.5 hover:bg-[#FF4444]/10 transition-colors">
