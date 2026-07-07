@@ -10,8 +10,14 @@ const getWeekNumber = (date) => {
 }
 
 const buildWeekCode = (date = new Date()) => {
+    // Usar año ISO para que semanas que caen entre dos meses/años sean únicas
+    // Ej: semana 1 de 2025 puede empezar en diciembre 2024 → usamos el año de la semana ISO
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    const dayNum = d.getUTCDay() || 7
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+    const isoYear = d.getUTCFullYear()
     const week = String(getWeekNumber(date)).padStart(2, '0')
-    return `${date.getFullYear()}-M${date.getMonth() + 1}-W${week}`
+    return `${isoYear}-W${week}`
 }
 
 // ─── armar ventas desde rows ──────────────────────────────────────────────────
@@ -277,7 +283,7 @@ const updateSale = async (id, { itemPrices, payments, total }) => {
 // Reemplazar SOLO la función createManual en adminSalesModel.js
 // Cambios: acepta totalOverride y lo usa en lugar del calculado si viene
 
-const createManual = async ({ clientName, clientPhone, location, rubro, items, payments, shippingPrice, discountAmount, isWholesale, exchangeRate, totalOverride }) => {
+const createManual = async ({ clientName, clientPhone, location, rubro, items, payments, shippingPrice, discountAmount, isWholesale, exchangeRate, totalOverride, saleDate }) => {
     const conn = await pool.getConnection()
     try {
         await conn.beginTransaction()
@@ -307,17 +313,21 @@ const createManual = async ({ clientName, clientPhone, location, rubro, items, p
 
         const itemsTotal = items.reduce((acc, i) => acc + i.unitPrice * i.quantity, 0)
         const calculatedTotal = itemsTotal + Number(shippingPrice || 0) - Number(discountAmount || 0)
-
-        // Si viene totalOverride (total editado manualmente en el admin), usarlo
-        // Si no, usar el calculado normalmente
         const total = totalOverride != null ? totalOverride : calculatedTotal
 
-        const weekCode = buildWeekCode()
+        // Si viene saleDate (YYYY-MM-DD), usarla para week_code y created_at
+        const dateForCode = saleDate ? new Date(saleDate + 'T12:00:00') : new Date()
+        const weekCode = buildWeekCode(dateForCode)
+
+        // Si hay fecha manual, sobreescribir created_at
+        const createdAtField = saleDate ? `, created_at` : ''
+        const createdAtValue = saleDate ? `, ?` : ''
+        const createdAtParam = saleDate ? [saleDate + ' 12:00:00'] : []
 
         const [saleRes] = await conn.query(`
-            INSERT INTO sales (rubro, client_id, is_wholesale, status, total, shipping_price, location, discount_amount, week_code, exchange_rate)
-            VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
-        `, [rubro, clientId, isWholesale ? 1 : 0, total, shippingPrice || 0, location || null, discountAmount || 0, weekCode, exchangeRate ?? null])
+            INSERT INTO sales (rubro, client_id, is_wholesale, status, total, shipping_price, location, discount_amount, week_code, exchange_rate${createdAtField})
+            VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?${createdAtValue})
+        `, [rubro, clientId, isWholesale ? 1 : 0, total, shippingPrice || 0, location || null, discountAmount || 0, weekCode, exchangeRate ?? null, ...createdAtParam])
 
         const saleId = saleRes.insertId
 

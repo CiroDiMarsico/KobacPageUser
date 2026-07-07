@@ -55,10 +55,12 @@ const EditModal = ({ col, onClose, onSaved }) => {
     const svRef = useRef(col.savings ?? 0)
 
     const calcPreview = (disp, sal, sv) => {
-        const subtotalEntradas = Number(disp) + col.ventas + col.mayorista - Number(sal) - Number(sv)
+        const subtotalEntradas = Number(disp) + col.ventas + col.mayorista
+        const subtotalSalidas  = col.compras + col.gastos + Number(sal) + Number(sv)
         return {
             subtotalEntradas,
-            total: subtotalEntradas - col.subtotalSalidas,
+            subtotalSalidas,
+            total: subtotalEntradas - subtotalSalidas,
         }
     }
 
@@ -126,7 +128,7 @@ const EditModal = ({ col, onClose, onSaved }) => {
                     </div>
                     <div className="flex justify-between">
                         <span className="font-['koulen'] text-[13px] text-white/40">SUBTOTAL −</span>
-                        <span className="font-['koulen'] text-[14px] text-white">{fmt(col.subtotalSalidas)}</span>
+                        <span className="font-['koulen'] text-[14px] text-white">{fmt(preview.subtotalSalidas)}</span>
                     </div>
                     <div className="border-t border-white/10 mt-1 pt-2 flex justify-between">
                         <span className="font-['koulen'] text-[15px] text-white">TOTAL</span>
@@ -155,17 +157,17 @@ const TablaComparativa = ({ cols, rubro, onEdit }) => {
     // filas que queremos mostrar
     const rows = [
         { key: "disponibilidad", label: "disponibilidad", bold: false, color: "" },
-        { key: "ventas", label: "ventas", bold: false, color: "" },
-        { key: "mayorista", label: "mayorista", bold: false, color: "" },
-        { key: "salaries", label: "sueldos", bold: false, color: "text-white/50", hide0: true },
-        { key: "savings", label: "ahorros", bold: false, color: "text-white/50", hide0: true },
-        { key: "subtotalEntradas", label: "subtotal", bold: true, color: "text-white", separator: true },
+        { key: "ventas",         label: "ventas",         bold: false, color: "" },
+        { key: "mayorista",      label: "mayorista",      bold: false, color: "" },
+        { key: "subtotalEntradas", label: "subtotal",     bold: true,  color: "text-white", separator: true },
         { key: null },  // spacer
-        { key: "compras", label: "compras", bold: false, color: "" },
-        { key: "gastos", label: "gastos", bold: false, color: "" },
-        { key: "subtotalSalidas", label: "subtotal", bold: true, color: "text-white", separator: true },
+        { key: "compras",        label: "compras",        bold: false, color: "" },
+        { key: "gastos",         label: "gastos",         bold: false, color: "" },
+        { key: "salaries",       label: "sueldos",        bold: false, color: "text-white/50", hide0: true },
+        { key: "savings",        label: "ahorros",        bold: false, color: "text-white/50", hide0: true },
+        { key: "subtotalSalidas", label: "subtotal",      bold: true,  color: "text-white", separator: true },
         { key: null },  // spacer
-        { key: "total", label: "TOTAL", bold: true, color: "", separator: true, isFinal: true },
+        { key: "total",          label: "TOTAL",          bold: true,  color: "", separator: true, isFinal: true },
     ]
 
     const cellVal = (col, key) => {
@@ -191,7 +193,7 @@ const TablaComparativa = ({ cols, rubro, onEdit }) => {
                             <th key={col.weekCode}
                                 className="font-['koulen'] text-[13px] text-[#C32CFF] tracking-wider text-right px-4 py-3">
                                 <div className="flex flex-col items-end gap-1">
-                                    <span>{col.weekCode.replace(/^\d{4}-M\d+-/, "")}</span>
+                                    <span>{col.weekCode.replace(/^\d{4}-(?:M\d+-)?/, "")}</span>
                                     <button onClick={() => onEdit({ ...col, rubro })}
                                         className="font-['koulen'] text-[10px] text-white/20 hover:text-[#C32CFF] transition-colors">
                                         EDITAR ✎
@@ -314,7 +316,7 @@ const AdminCierreCaja = () => {
                                 ${active
                                         ? "bg-[#C32CFF] text-white"
                                         : "bg-white/5 text-white/30 hover:bg-white/10"}`}>
-                                {wc.replace(/^\d{4}-M\d+-/, "")}
+                                {wc.replace(/^\d{4}-(?:M\d+-)?/, "")}
                             </button>
                         )
                     })}

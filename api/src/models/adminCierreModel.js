@@ -10,12 +10,17 @@ const getWeekNumber = (date) => {
 }
 
 const buildWeekCode = (date = new Date()) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    const dayNum = d.getUTCDay() || 7
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+    const isoYear = d.getUTCFullYear()
     const week = String(getWeekNumber(date)).padStart(2, '0')
-    return `${date.getFullYear()}-M${date.getMonth() + 1}-W${week}`
+    return `${isoYear}-W${week}`
 }
 
 const periodFromWeekCode = (weekCode) => {
-    const match = weekCode.match(/^(\d{4})-M\d+-W(\d+)$/)
+    // Soporta formato nuevo YYYY-WNN y viejo YYYY-MN-WNN
+    const match = weekCode.match(/^(\d{4})-(?:M\d+-)?W(\d+)$/)
     if (!match) {
         const today = new Date().toISOString().split('T')[0]
         return { periodStart: today, periodEnd: today }
@@ -174,8 +179,8 @@ const getComparativa = async (rubro, weekCodes) => {
         const dispGuardada = reg ? Number(reg.prev_cash ?? 0) + Number(reg.prev_transfer ?? 0) : null
         const disp = dispGuardada !== null && dispGuardada !== 0 ? dispGuardada : disponibilidad
 
-        const subtotalEntradas = disp + d.ventas.minorista + d.ventas.mayorista - d.salaries - d.savings
-        const subtotalSalidas  = d.compras.total + d.gastos.total
+        const subtotalEntradas = disp + d.ventas.minorista + d.ventas.mayorista
+        const subtotalSalidas  = d.compras.total + d.gastos.total + d.salaries + d.savings
         const total            = subtotalEntradas - subtotalSalidas
 
         cols.push({

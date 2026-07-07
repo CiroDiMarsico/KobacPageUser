@@ -65,7 +65,8 @@ const createManual = async (req, res) => {
             clientName, clientPhone, location, rubro,
             items, payments, shippingPrice, discountAmount,
             isWholesale, exchangeRate,
-            total  // ← total manual opcional desde el admin
+            total,    // ← total manual opcional desde el admin
+            saleDate  // ← fecha manual opcional (YYYY-MM-DD)
         } = req.body
 
         if (!items || items.length === 0)
@@ -77,7 +78,8 @@ const createManual = async (req, res) => {
             clientName, clientPhone, location, rubro,
             items, payments, shippingPrice, discountAmount,
             isWholesale, exchangeRate,
-            totalOverride: total != null ? Number(total) : null  // ← pasa el override
+            totalOverride: total != null ? Number(total) : null,
+            saleDate: saleDate || null
         })
         res.status(201).json({ ok: true, id })
     } catch (e) {

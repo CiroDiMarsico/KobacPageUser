@@ -319,6 +319,7 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
     const [items, setItems] = useState([])
     const [payments, setPayments] = useState([{ method: "cash", amount: "" }])
     const [totalOverride, setTotalOverride] = useState("") // total manual
+    const [saleDate, setSaleDate] = useState("")             // fecha manual (vacío = hoy)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
 
@@ -402,7 +403,8 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                     promoId: null
                 })),
                 payments: payments.map(p => ({ method: p.method, amount: Number(p.amount) })),
-                total
+                total,
+                saleDate: saleDate || null
             }, authHeaders())
             onSaved()
         } catch (e) {
@@ -420,6 +422,28 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                     <Input placeholder="Teléfono" value={clientPhone} onChange={setClientPhone} />
                 </div>
                 <Input placeholder="Dirección" value={location} onChange={setLocation} />
+            </div>
+
+            {/* Fecha del pedido */}
+            <div className="flex flex-col gap-1">
+                <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">
+                    FECHA DEL PEDIDO <span className="text-white/20">(dejar vacío para hoy)</span>
+                </label>
+                <input
+                    type="date"
+                    value={saleDate}
+                    onChange={e => setSaleDate(e.target.value)}
+                    max={todayISO()}
+                    className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[42px] px-4 font-['koulen'] text-[15px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full max-w-[220px]"
+                />
+                {saleDate && (
+                    <button
+                        onClick={() => setSaleDate("")}
+                        className="font-['koulen'] text-[12px] text-white/30 hover:text-white text-left w-fit"
+                    >
+                        ✕ usar fecha actual
+                    </button>
+                )}
             </div>
 
             {/* Toggle mayorista — solo vapes */}
