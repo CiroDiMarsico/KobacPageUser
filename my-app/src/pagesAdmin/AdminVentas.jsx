@@ -93,6 +93,7 @@ const VariantSearch = ({ products, value, onChange, placeholder = "Buscar produc
                 variantName: v.name,
                 salePrice: p.salePrice,
                 stock: v.stock,
+                lastPurchasePrice: v.lastPurchasePrice ?? null,
             }))
     )
 
@@ -331,7 +332,7 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
     const handleVariantSelect = (i, variant) => {
         if (!variant) {
             setItems(prev => prev.map((item, idx) => idx !== i ? item : {
-                ...item, variantId: "", unitPrice: "", priceUsd: "", stock: null
+                ...item, variantId: "", unitPrice: "", priceUsd: "", stock: null, costPrice: null
             }))
             return
         }
@@ -342,7 +343,8 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
             unitPrice: showUsd && item.priceUsd && tc
                 ? String(Math.round(Number(item.priceUsd) * tc * 100) / 100)
                 : String(variant.salePrice),
-            stock: variant.stock
+            stock: variant.stock,
+            costPrice: variant.lastPurchasePrice ?? null
         }))
     }
 
@@ -475,6 +477,15 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
                                     className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 w-full" />
                             </div>
 
+                            {item.costPrice != null && (
+                                <div className="flex flex-col gap-1 justify-end shrink-0">
+                                    <label className="font-['koulen'] text-[11px] text-white/20">COSTO</label>
+                                    <span className="font-['koulen'] text-[14px] text-white/30 h-[38px] flex items-center">
+                                        {fmt(item.costPrice * (Number(item.quantity) || 1))}
+                                    </span>
+                                </div>
+                            )}
+
                             {showUsd && (
                                 <div className="flex flex-col gap-1 flex-1 min-w-[90px]">
                                     <label className="font-['koulen'] text-[11px] text-green-400/60">PRECIO USD</label>
@@ -525,6 +536,15 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
             {/* Total con opción de editar */}
             {items.length > 0 && (
                 <div className="flex flex-col gap-2">
+                    {/* Costo total estimado */}
+                    {items.some(i => i.costPrice != null) && (
+                        <div className="flex items-center justify-between px-4 py-1.5">
+                            <span className="font-['koulen'] text-[13px] text-white/25">COSTO ESTIMADO</span>
+                            <span className="font-['koulen'] text-[14px] text-white/30">
+                                {fmt(items.reduce((acc, i) => acc + (i.costPrice ?? 0) * (Number(i.quantity) || 1), 0))}
+                            </span>
+                        </div>
+                    )}
                     <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2">
                         <div className="flex items-center gap-2">
                             <span className="font-['koulen'] text-[14px] text-white/50">TOTAL</span>
@@ -916,11 +936,20 @@ const AdminVentas = () => {
         ]).then(([prodRes, stockRes]) => {
             const stockMap = {}
             stockRes.data.forEach(p => {
-                p.variants.forEach(v => { stockMap[v.id] = v.stock })
+                p.variants.forEach(v => {
+                    stockMap[v.id] = {
+                        stock: v.stock,
+                        lastPurchasePrice: v.lastPurchasePrice ?? null
+                    }
+                })
             })
             const merged = prodRes.data.map(p => ({
                 ...p,
-                variants: p.variants.map(v => ({ ...v, stock: stockMap[v.id] ?? 0 }))
+                variants: p.variants.map(v => ({
+                    ...v,
+                    stock: stockMap[v.id]?.stock ?? 0,
+                    lastPurchasePrice: stockMap[v.id]?.lastPurchasePrice ?? null
+                }))
             }))
             setProducts(merged)
         })

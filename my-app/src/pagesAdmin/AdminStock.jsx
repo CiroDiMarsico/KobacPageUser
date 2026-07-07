@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react"
 import api from "../api/axios"
-import Loading from "../components/Loading"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
 const fmt = (n) => n != null ? `$${Number(n).toLocaleString("es-AR")}` : "—"
 const fmtDate = (d) => new Date(d).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })
-const API_BASE = ""
+const API_BASE = 'http://localhost:3000'
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
 const Btn = ({ onClick, children, color = "purple", small = false, disabled = false }) => {
@@ -47,6 +46,94 @@ const Modal = ({ title, onClose, children, wide = false }) => (
         </div>
     </div>
 )
+
+// ─── Buscador de variantes (stock) ───────────────────────────────────────────
+const VariantSearchStock = ({ products, value, onChange }) => {
+    const [query, setQuery] = useState("")
+    const [open, setOpen] = useState(false)
+    const ref = useRef()
+
+    const allVariants = products.flatMap(p =>
+        p.variants.filter(v => v.isActive).map(v => ({
+            variantId: v.id,
+            label: `${p.name} — ${v.name}`,
+            productName: p.name,
+            variantName: v.name,
+            lastPrice: v.lastPurchasePrice,
+            lastPriceUsd: v.lastPriceUsd,
+            stock: v.stock,
+        }))
+    )
+
+    const filtered = query.trim() === ""
+        ? allVariants
+        : allVariants.filter(v => v.label.toLowerCase().includes(query.toLowerCase()))
+
+    useEffect(() => {
+        const handleClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+        document.addEventListener("mousedown", handleClick)
+        return () => document.removeEventListener("mousedown", handleClick)
+    }, [])
+
+    const selected = allVariants.find(v => v.variantId === value)
+
+    const handleSelect = (variant) => {
+        onChange(variant)
+        setQuery("")
+        setOpen(false)
+    }
+
+    const handleClear = () => {
+        onChange(null)
+        setQuery("")
+    }
+
+    return (
+        <div ref={ref} className="relative flex-1">
+            {selected && !open ? (
+                <div className="flex items-center justify-between bg-[#1E1E2E] border border-[#C32CFF]/40 rounded-xl h-[38px] px-3">
+                    <span className="font-['koulen'] text-[14px] text-white truncate">{selected.label}</span>
+                    <button onClick={handleClear} className="font-['koulen'] text-[14px] text-white/30 hover:text-white ml-2 shrink-0">✕</button>
+                </div>
+            ) : (
+                <input
+                    type="text"
+                    value={query}
+                    placeholder="Buscar producto..."
+                    onChange={e => { setQuery(e.target.value); setOpen(true) }}
+                    onFocus={() => setOpen(true)}
+                    className="w-full bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60"
+                />
+            )}
+
+            {open && (
+                <div className="absolute z-50 top-[42px] left-0 right-0 bg-[#0A0A14] border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-[220px] overflow-y-auto">
+                    {filtered.length === 0 ? (
+                        <p className="font-['koulen'] text-[13px] text-white/30 text-center py-4">Sin resultados</p>
+                    ) : (
+                        filtered.map(v => (
+                            <button
+                                key={v.variantId}
+                                onClick={() => handleSelect(v)}
+                                className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.05] transition-colors text-left border-b border-white/5 last:border-0"
+                            >
+                                <span className="font-['koulen'] text-[14px] text-white truncate">{v.label}</span>
+                                <div className="flex items-center gap-3 shrink-0 ml-2">
+                                    <span className={`font-['koulen'] text-[12px] ${v.stock === 0 ? "text-red-400" : v.stock <= 4 ? "text-yellow-400" : "text-green-400"}`}>
+                                        {v.stock}u
+                                    </span>
+                                    {v.lastPrice != null && (
+                                        <span className="font-['koulen'] text-[12px] text-white/40">{fmt(v.lastPrice)}</span>
+                                    )}
+                                </div>
+                            </button>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
 
 // ─── Modal ajuste de stock ────────────────────────────────────────────────────
 const AjusteModal = ({ variant, productName, onClose, onSaved }) => {
@@ -595,16 +682,23 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
 
     const removeItem = (i) => setItems(prev => prev.filter((_, idx) => idx !== i))
 
-    const updateVariant = (i, variantId) => {
-        const found = allVariants.find(v => v.variantId === Number(variantId))
+    const updateVariant = (i, variant) => {
+        if (!variant) {
+            setItems(prev => prev.map((item, idx) => idx !== i ? item : {
+                ...item, variantId: "", productName: "", variantName: "", priceUsd: "", unitPrice: ""
+            }))
+            return
+        }
         const tc = Number(exchangeRate) || 0
-        const usd = found?.lastPriceUsd ?? ""
-        const ars = usd && tc > 0 ? String(Math.round(Number(usd) * tc)) : (found?.lastPrice != null ? String(found.lastPrice) : "")
+        const usd = variant.lastPriceUsd ?? ""
+        const ars = usd && tc > 0
+            ? String(Math.round(Number(usd) * tc))
+            : (variant.lastPrice != null ? String(variant.lastPrice) : "")
         setItems(prev => prev.map((item, idx) => idx !== i ? item : {
             ...item,
-            variantId: Number(variantId),
-            productName: found?.productName ?? "",
-            variantName: found?.variantName ?? "",
+            variantId: variant.variantId,
+            productName: variant.productName,
+            variantName: variant.variantName,
             priceUsd: usd ? String(usd) : "",
             unitPrice: ars
         }))
@@ -779,17 +873,11 @@ const NuevaCompraModal = ({ rubro, products, suppliers, onClose, onSaved, onNewS
 
                     {items.map((item, i) => (
                         <div key={i} className="flex flex-col gap-2 bg-white/[0.03] border border-white/10 rounded-xl p-3">
-                            <select value={item.variantId} onChange={e => updateVariant(i, e.target.value)}
-                                className="w-full bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60">
-                                <option value="">— elegir producto/variante —</option>
-                                {products.map(p => (
-                                    <optgroup key={p.id} label={p.name}>
-                                        {p.variants.filter(v => v.isActive).map(v => (
-                                            <option key={v.id} value={v.id}>{p.name} — {v.name}</option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
+                            <VariantSearchStock
+                                products={products}
+                                value={item.variantId || null}
+                                onChange={(variant) => updateVariant(i, variant)}
+                            />
 
                             <div className="flex gap-2 flex-wrap">
                                 <div className="flex flex-col gap-1" style={{minWidth:'70px', flex:1}}>
@@ -1032,9 +1120,7 @@ const AdminStock = () => {
                 className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[44px] px-5 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full max-w-[400px]" />
 
             {loading ? (
-                <div className="flex items-center justify-center h-[463px]">
-                    <Loading size="small" />
-                </div>
+                <p className="font-['koulen'] text-white/30 tracking-widest text-center py-10">CARGANDO...</p>
             ) : (
                 <div className="flex flex-col gap-8">
                     {Object.entries(grouped).map(([cat, prods]) => (

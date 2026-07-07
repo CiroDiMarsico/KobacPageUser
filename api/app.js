@@ -5,6 +5,8 @@
 //npm install nodemon
 //npm install multer
 
+process.env.TZ = 'America/Argentina/Buenos_Aires'
+
 const express = require('express')
 const path = require('path')
 require('dotenv').config()
