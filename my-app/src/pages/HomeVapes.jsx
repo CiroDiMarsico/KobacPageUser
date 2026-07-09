@@ -5,8 +5,8 @@ import Carousel from "../components/Carousel";
 import Loading from "../components/Loading";
 import Cart from "../components/Cart";
 import { useNavigate } from "react-router-dom";
-import grafittiKobac from "/assets/grafittiKobac.png";
-import lupaIcon from "/assets/lupa.png";
+import grafittiKobac from "/assets/grafittiKobac.webp";
+import lupaIcon from "/assets/lupa.webp";
 import api from '../api/axios'
 import { useCarrito } from "../hooks/useCarrito"
 

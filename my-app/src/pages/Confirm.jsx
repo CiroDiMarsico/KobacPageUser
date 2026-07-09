@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import api from '../api/axios'
-import ubiIcon from '/assets/ubi.png'
+import ubiIcon from '/assets/ubi.webp'
 
 const Confirm = () => {
 

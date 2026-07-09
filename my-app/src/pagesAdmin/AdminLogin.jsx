@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import api from "../api/axios"
-import grafittiKobac from "/assets/grafittiKobac.png";
+import grafittiKobac from "/assets/grafittiKobac.webp";
 
 const AdminLogin = () => {
   const navigate = useNavigate()

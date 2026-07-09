@@ -61,7 +61,9 @@ const Product = ({
     product.variants.length === 1 &&
     product.variants[0].name.trim().toLowerCase() === product.name.trim().toLowerCase();
 
-  const textoBoton = sinSabores ? "AGREGAR" : "SABORES";
+  const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
+  const textoBoton = totalStock === 0 ? "AGOTADO" : sinSabores ? "AGREGAR" : "SABORES";
+
 
   useEffect(() => {
     if (open) {
@@ -74,11 +76,12 @@ const Product = ({
       document.body.style.overflow = "";
     };
   }, [open]);
+  console.log(product)
 
   return (
     <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt']">
       <div className="bg-[#fff] rounded-3xl h-[150px] w-[100%] flex items-center justify-center">
-        {product.img && <img src={product.img} alt={product.name} className=" h-[150px]" />}
+        {product.img && <img src={product.img} alt={product.name} className=" h-[150px]" loading="lazy" />}
       </div>
       <div className="flex flex-col items-center gap-1">
         <h1 className={`font-bold leading-none text-center transition-all duration-200 ${isLongText ? 'text-[14px]' : 'text-[20px]'
@@ -89,7 +92,7 @@ const Product = ({
           ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice)}
         </h3>
       </div>
-      <Button text={textoBoton} width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" click={abrirPopover} />
+      <Button text={textoBoton} width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" click={abrirPopover} disabled={totalStock === 0} />
       {open && (
         <Popover
           product={product}

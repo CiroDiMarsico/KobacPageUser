@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Popover from "./Popover";
 import PopoverPromo from "./PopoverPromo";
 import Button from "./Button";
-import carritoVacio from "/assets/carritoVacio.png";
-import carritoMedio from "/assets/carritoMedio.png";
-import carritoLleno from "/assets/carritoLleno.png";
-import carritoRelleno from "/assets/carritoRelleno.png";
+import carritoVacio from "/assets/carritoVacio.webp";
+import carritoMedio from "/assets/carritoMedio.webp";
+import carritoLleno from "/assets/carritoLleno.webp";
+import carritoRelleno from "/assets/carritoRelleno.webp";
 
 const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoAlCarrito, getStockDisponible, rubro = "bebidas" }) => {
   const [open, setOpen] = useState(false);
@@ -111,7 +111,7 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
                   <div className="flex justify-between items-center mb-1">
                     <div className="flex items-center justify-center gap-2">
                       <button className="h-[25px] w-[25px] flex items-center justify-center rounded-md">
-                        <img src="/assets/editar.png" className="h-[18px]" alt="" />
+                        <img src="/assets/editar.webp" className="h-[18px]" alt="" />
                       </button>
                       <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
                     </div>
@@ -149,7 +149,7 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center justify-center gap-2">
                     <button className="h-[25px] w-[25px] flex items-center justify-center rounded-md">
-                      <img src="/assets/editar.png" className="h-[18px]" alt="" />
+                      <img src="/assets/editar.webp" className="h-[18px]" alt="" />
                     </button>
                     <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
                   </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import menuIcon from "/assets/menu.png"
+import menuIcon from "/assets/menu.webp"
 import LiAdmin from "../components/LiAdmin"
 import AdminProductos from "./AdminProductos"
 import AdminPromos from "./AdminPromos"

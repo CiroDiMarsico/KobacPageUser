@@ -1,6 +1,6 @@
-import whatsappIcon from "/assets/whatsapp.png";
-import logokobac from "/assets/logokobac.png";
-import instagramIcon from "/assets/instagram.png";
+import whatsappIcon from "/assets/whatsapp.webp";
+import logokobac from "/assets/logokobac.webp";
+import instagramIcon from "/assets/instagram.webp";
 
 const Navbar = () => {
   return (
