@@ -13,10 +13,7 @@ const create = async (req, res) => {
         const clientId = await clientModel.findOrCreate(informacion.nombre, informacion.telefono)
 
         const now = new Date()
-        const year = now.getFullYear()
-        const week = String(getWeekNumber(now)).padStart(2, '0')
-        const month = now.getMonth() + 1
-        const weekCode = `${year}-M${month}-W${week}`
+        const weekCode = buildWeekCode(now)
 
         // Recalcular subtotal en el servidor desde la base de datos
         let calculatedSubtotal = 0
@@ -136,6 +133,15 @@ const getWeekNumber = (date) => {
     d.setUTCDate(d.getUTCDate() + 4 - dayNum)
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
+}
+
+const buildWeekCode = (date = new Date()) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    const dayNum = d.getUTCDay() || 7
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+    const isoYear = d.getUTCFullYear()
+    const week = String(getWeekNumber(date)).padStart(2, '0')
+    return `${isoYear}-W${week}`
 }
 
 module.exports = { create }

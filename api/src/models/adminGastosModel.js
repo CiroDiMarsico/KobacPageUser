@@ -10,8 +10,12 @@ const getWeekNumber = (date) => {
 }
 
 const buildWeekCode = (date = new Date()) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    const dayNum = d.getUTCDay() || 7
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+    const isoYear = d.getUTCFullYear()
     const week = String(getWeekNumber(date)).padStart(2, '0')
-    return `${date.getFullYear()}-M${date.getMonth() + 1}-W${week}`
+    return `${isoYear}-W${week}`
 }
 
 // ─── GET (filtrar por rubro + semanas o fecha exacta) ─────────────────────────

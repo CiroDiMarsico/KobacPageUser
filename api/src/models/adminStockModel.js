@@ -163,8 +163,7 @@ const createPurchase = async ({ supplierId, rubro, items }) => {
 
         // week_code
         const now = new Date()
-        const week = String(getWeekNumber(now)).padStart(2, '0')
-        const weekCode = `${now.getFullYear()}-M${now.getMonth() + 1}-W${week}`
+        const weekCode = buildWeekCode(now)
 
         // cabecera de compra
         const [purchaseResult] = await conn.query(`
@@ -289,6 +288,15 @@ const getWeekNumber = (date) => {
     d.setUTCDate(d.getUTCDate() + 4 - dayNum)
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
+}
+
+const buildWeekCode = (date = new Date()) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    const dayNum = d.getUTCDay() || 7
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+    const isoYear = d.getUTCFullYear()
+    const week = String(getWeekNumber(date)).padStart(2, '0')
+    return `${isoYear}-W${week}`
 }
 
 module.exports = { getStock, getSuppliers, createSupplier, createPurchase, adjustStock }
