@@ -55,7 +55,13 @@ const Product = ({
     }
   }, [carrito]);
 
-  const isLongText = product.name.length >= 20;
+  const isLongText = product.name.length >= 18;
+
+  const sinSabores =
+    product.variants.length === 1 &&
+    product.variants[0].name.trim().toLowerCase() === product.name.trim().toLowerCase();
+
+  const textoBoton = sinSabores ? "AGREGAR" : "SABORES";
 
   useEffect(() => {
     if (open) {
@@ -83,7 +89,7 @@ const Product = ({
           ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice)}
         </h3>
       </div>
-      <Button text="AGREGAR" width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" click={abrirPopover} />
+      <Button text={textoBoton} width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" click={abrirPopover} />
       {open && (
         <Popover
           product={product}
