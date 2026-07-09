@@ -18,18 +18,33 @@ services:
       - kobac_uploads:/app/public
     networks:
       - red_existente
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.kobac-api.rule=Host(`kobacdelivery.com`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.kobac-api.entrypoints=websecure"
+        - "traefik.http.routers.kobac-api.tls=true"
+        - "traefik.http.routers.kobac-api.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.kobac-api.priority=10"
+        - "traefik.http.services.kobac-api.loadbalancer.server.port=3000"
 
   frontend:
     build:
       context: ./my-app
       dockerfile: Dockerfile
     image: kobac_frontend:latest
-    ports:
-      - "8080:80"
     depends_on:
       - api
     networks:
       - red_existente
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.kobac-web.rule=Host(`kobacdelivery.com`) || Host(`www.kobacdelivery.com`)"
+        - "traefik.http.routers.kobac-web.entrypoints=websecure"
+        - "traefik.http.routers.kobac-web.tls=true"
+        - "traefik.http.routers.kobac-web.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.kobac-web.loadbalancer.server.port=80"
 
 volumes:
   kobac_uploads:
