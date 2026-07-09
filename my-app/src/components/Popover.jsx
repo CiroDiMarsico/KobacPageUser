@@ -30,8 +30,8 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
           <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none mt-1">${product.salePrice}</h3>
         </div>
 
-        {/* CONTENEDOR CON SCROLL: Aquí es donde ocurría el quiebre */}
-        <div className="w-full flex-1 overflow-y-auto z-10 pr-1 flex flex-col gap-5 custom-scrollbar">
+        {/* CONTENEDOR CON SCROLL */}
+        <div className="w-full flex-1 overflow-y-auto z-10 pr-1 pt-5 flex flex-col gap-5 custom-scrollbar">
           {product.variants
             .filter(variant => variant.isActive)
             .map(variant =>
