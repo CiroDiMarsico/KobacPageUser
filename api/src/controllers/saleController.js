@@ -63,24 +63,31 @@ const create = async (req, res) => {
             }
         }
 
-        // Validar código de descuento en servidor si fue proporcionado
         let discountCodeId = null
         let discountAmount = 0
 
         if (discount?.code) {
             const [[validDiscount]] = await conn.query(`
                 SELECT * FROM discount_codes
-                WHERE code = ? AND is_active = TRUE
-                AND (expires_at IS NULL OR expires_at > NOW())
+                WHERE code = ?
+                FOR UPDATE
             `, [discount.code])
 
-            if (validDiscount) {
-                discountCodeId = validDiscount.id
-                if (validDiscount.discount_type === 'percentage') {
-                    discountAmount = Math.round((calculatedSubtotal * Number(validDiscount.discount_value)) / 100)
-                } else {
-                    discountAmount = Number(validDiscount.discount_value)
-                }
+            const isValid = validDiscount
+                && validDiscount.is_active
+                && (!validDiscount.expires_at || new Date(validDiscount.expires_at) > new Date())
+
+            if (!isValid) {
+                const err = new Error('Discount code invalid')
+                err.code = 'DISCOUNT_INVALID'
+                throw err
+            }
+
+            discountCodeId = validDiscount.id
+            if (validDiscount.discount_type === 'percentage') {
+                discountAmount = Math.round((calculatedSubtotal * Number(validDiscount.discount_value)) / 100)
+            } else {
+                discountAmount = Number(validDiscount.discount_value)
             }
         }
 
@@ -120,6 +127,9 @@ const create = async (req, res) => {
                 agotados: error.agotados,
                 parciales: error.parciales
             })
+        }
+        if (error.code === 'DISCOUNT_INVALID') {
+            return res.status(409).json({ code: 'DISCOUNT_INVALID' })
         }
         res.status(500).json({ error: 'Error al registrar la venta' })
     } finally {

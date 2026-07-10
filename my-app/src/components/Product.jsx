@@ -61,7 +61,10 @@ const Product = ({
     product.variants.length === 1 &&
     product.variants[0].name.trim().toLowerCase() === product.name.trim().toLowerCase();
 
-  const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
+  const totalStock = product.variants
+    .filter(v => v.isActive)
+    .reduce((acc, v) => acc + v.stock, 0);
+
   const textoBoton = totalStock === 0 ? "AGOTADO" : sinSabores ? "AGREGAR" : "SABORES";
 
 

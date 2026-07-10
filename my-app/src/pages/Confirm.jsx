@@ -31,6 +31,7 @@ const Confirm = () => {
   const [close, setClose] = useState(true);
   const [loadingConfirm, setLoadingConfirm] = useState(false);
   const [modalAgotados, setModalAgotados] = useState(null)
+  const [modalDescuentoInvalido, setModalDescuentoInvalido] = useState(false)
 
   const handleApplyDiscount = async () => {
     try {
@@ -218,22 +219,14 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
           promosEliminadas,
           carritoAjustado
         })
+      } else if (resData?.code === 'DISCOUNT_INVALID') {
+        setDiscount(null)
+        setDiscountCode('')
+        setDiscountMsg('')
+        setModalDescuentoInvalido(true)
       } else {
         alert('Hubo un error al procesar tu pedido. Intentá de nuevo.')
       }
-    } finally {
-      setLoadingConfirm(false)
-    }
-  }
-
-  const handleConfirmarIgual = async () => {
-    setModalAgotados(null)
-    setLoadingConfirm(true)
-    try {
-      await procesarVenta(modalAgotados.carritoAjustado)
-    } catch (error) {
-      console.error(error)
-      alert('Hubo un error al procesar tu pedido. Intentá de nuevo.')
     } finally {
       setLoadingConfirm(false)
     }
@@ -367,7 +360,7 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
                   color="#C32CFF"
                   textColor="#FFFFFF"
                   textSize="18px"
-                  click={handleConfirmarIgual}
+                  click={handleConfirmar}
                 />
               ) : (
                 <p className="font-['koulen'] text-[16px] text-red-400 text-center">
@@ -382,6 +375,43 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
                 textColor="#C32CFF"
                 textSize="18px"
                 click={() => { setModalAgotados(null); navigate("/") }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal código de descuento inválido */}
+      {modalDescuentoInvalido && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80">
+          <div className="bg-[#11111F] border border-yellow-400 rounded-3xl p-6 w-[85vw] flex flex-col items-center gap-5 font-['prompt']">
+            <h1 className="font-['koulen'] text-[28px] text-yellow-400 text-center">⚠️ CÓDIGO NO VÁLIDO</h1>
+
+            <p className="font-['koulen'] text-[18px] text-white text-center">
+              Tu código de descuento ya no está disponible — puede haber sido usado o haber expirado mientras completabas el pedido.
+            </p>
+
+            <p className="font-['koulen'] text-[16px] text-white/60 text-center">
+              Lo sacamos del pedido y ajustamos el total. Podés confirmar de nuevo sin descuento, o cargar otro código.
+            </p>
+
+            <div className="flex flex-col gap-3 w-full items-center">
+              <Button
+                text="CONFIRMAR SIN DESCUENTO"
+                width="280px"
+                height="48px"
+                color="#C32CFF"
+                textColor="#FFFFFF"
+                textSize="18px"
+                click={() => setModalDescuentoInvalido(false)}
+              />
+              <Button
+                text="CARGAR OTRO CÓDIGO"
+                width="280px"
+                height="48px"
+                color="#1E1E1E"
+                textColor="#C32CFF"
+                textSize="18px"
+                click={() => { setModalDescuentoInvalido(false); setClose(false) }}
               />
             </div>
           </div>
