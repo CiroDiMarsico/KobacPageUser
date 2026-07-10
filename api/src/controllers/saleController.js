@@ -16,7 +16,8 @@ const create = async (req, res) => {
         const weekCode = buildWeekCode(now)
 
         // Recalcular subtotal en el servidor desde la base de datos
-        let calculatedSubtotal = 0
+        let subtotalProductos = 0
+        let subtotalPromos = 0
         const items = []
 
         for (const item of carrito) {
@@ -27,7 +28,7 @@ const create = async (req, res) => {
                 )
                 const promoPrice = promo ? Number(promo.price) : 0
                 const promoQty = item.cantidad || 1
-                calculatedSubtotal += promoPrice * promoQty
+                subtotalPromos += promoPrice * promoQty  // NO entra al subtotal con descuento
 
                 for (const [productId, variants] of Object.entries(item.selecciones || {})) {
                     for (const [variantId, quantity] of Object.entries(variants)) {
@@ -46,12 +47,12 @@ const create = async (req, res) => {
                     if (quantity > 0) {
                         const [[product]] = await conn.query(
                             `SELECT p.sale_price FROM products p
-                             JOIN variants v ON v.product_id = p.id
-                             WHERE v.id = ?`,
+                     JOIN variants v ON v.product_id = p.id
+                     WHERE v.id = ?`,
                             [variantId]
                         )
                         const unitPrice = product ? Number(product.sale_price) : 0
-                        calculatedSubtotal += unitPrice * Number(quantity)
+                        subtotalProductos += unitPrice * Number(quantity)  // SÍ entra al subtotal con descuento
                         items.push({
                             variantId: Number(variantId),
                             promoId: null,
@@ -63,15 +64,16 @@ const create = async (req, res) => {
             }
         }
 
+        // Validar código de descuento — se calcula SOLO sobre subtotalProductos
         let discountCodeId = null
         let discountAmount = 0
 
         if (discount?.code) {
             const [[validDiscount]] = await conn.query(`
-                SELECT * FROM discount_codes
-                WHERE code = ?
-                FOR UPDATE
-            `, [discount.code])
+        SELECT * FROM discount_codes
+        WHERE code = ?
+        FOR UPDATE
+    `, [discount.code])
 
             const isValid = validDiscount
                 && validDiscount.is_active
@@ -85,13 +87,15 @@ const create = async (req, res) => {
 
             discountCodeId = validDiscount.id
             if (validDiscount.discount_type === 'percentage') {
-                discountAmount = Math.round((calculatedSubtotal * Number(validDiscount.discount_value)) / 100)
+                discountAmount = Math.round((subtotalProductos * Number(validDiscount.discount_value)) / 100)
             } else {
                 discountAmount = Number(validDiscount.discount_value)
             }
+            // Nunca descontar más de lo que hay en productos (evita que "se lleve" plata de las promos)
+            discountAmount = Math.min(discountAmount, subtotalProductos)
         }
 
-        const calculatedTotal = Math.max(0, calculatedSubtotal - discountAmount)
+        const calculatedTotal = Math.max(0, subtotalProductos - discountAmount) + subtotalPromos
 
         const saleId = await saleModel.create(conn, {
             clientId, rubro, total: calculatedTotal, discountCodeId, discountAmount, weekCode,

@@ -45,20 +45,29 @@ const Confirm = () => {
     }
   }
 
-  const calcSubtotal = (c) => c.reduce((acc, item) => {
-    if (item.isPromo) return acc + item.precio * item.cantidad
+  const calcSubtotalProductos = (c) => c.reduce((acc, item) => {
+    if (item.isPromo) return acc
     if (!item.variants) return acc
     const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0)
     return acc + item.precio * cantTotal
   }, 0)
 
-  const subtotal = calcSubtotal(carrito)
-  const discountAmount = discount
+  const calcSubtotalPromos = (c) => c.reduce((acc, item) => {
+    if (!item.isPromo) return acc
+    return acc + item.precio * item.cantidad
+  }, 0)
+
+  const subtotalProductos = calcSubtotalProductos(carrito)
+  const subtotalPromos = calcSubtotalPromos(carrito)
+
+  const discountAmountRaw = discount
     ? discount.discount_type === 'percentage'
-      ? Math.round(subtotal * discount.discount_value / 100)
+      ? Math.round(subtotalProductos * discount.discount_value / 100)
       : discount.discount_value
     : 0
-  const total = subtotal - discountAmount
+  const discountAmount = Math.min(discountAmountRaw, subtotalProductos)
+
+  const total = (subtotalProductos - discountAmount) + subtotalPromos
 
   // Saca los agotados totales y ajusta cantidad de los parciales
   // Si una promo queda incompleta, se elimina entera
@@ -159,13 +168,18 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
   }
 
   const procesarVenta = async (carritoActual) => {
-    const subtotalActual = calcSubtotal(carritoActual)
-    const discountAmountActual = discount
+    const subtotalProductosActual = calcSubtotalProductos(carritoActual)
+    const subtotalPromosActual = calcSubtotalPromos(carritoActual)
+    const subtotalActual = subtotalProductosActual + subtotalPromosActual
+
+    const discountAmountRawActual = discount
       ? discount.discount_type === 'percentage'
-        ? Math.round(subtotalActual * discount.discount_value / 100)
+        ? Math.round(subtotalProductosActual * discount.discount_value / 100)
         : discount.discount_value
       : 0
-    const totalActual = subtotalActual - discountAmountActual
+    const discountAmountActual = Math.min(discountAmountRawActual, subtotalProductosActual)
+
+    const totalActual = (subtotalProductosActual - discountAmountActual) + subtotalPromosActual
 
     const payments = []
     if (show === 'efectivo') payments.push({ method: 'cash', amount: totalActual })
@@ -259,8 +273,8 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
           {discount && (
             <div className="text-green-400 font-['prompt'] text-center">
               ✅ {discount.code} — {discount.discount_type === 'percentage'
-                ? `${discount.discount_value}% de descuento`
-                : `$${discount.discount_value.toLocaleString('es-AR')} de descuento`}
+                ? `${discount.discount_value}% de descuento (no aplica a promociones)`
+                : `$${discount.discount_value.toLocaleString('es-AR')} de descuento (no aplica a promociones)`}
             </div>
           )}
         </div>
