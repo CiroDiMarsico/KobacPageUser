@@ -84,7 +84,7 @@ const Product = ({
   return (
     <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt']">
       <div className="bg-[#fff] rounded-3xl h-[150px] w-[100%] flex items-center justify-center">
-        {product.img && <img src={product.img} alt={product.name} className=" h-[150px]" loading="lazy" />}
+        {product.img && <img src={product.img} alt={product.name} className=" h-[150px]" loading="lazy"/>}
       </div>
       <div className="flex flex-col items-center gap-1">
         <h1 className={`font-bold leading-none text-center transition-all duration-200 ${isLongText ? 'text-[14px]' : 'text-[20px]'

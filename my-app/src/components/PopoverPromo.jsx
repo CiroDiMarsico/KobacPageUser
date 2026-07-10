@@ -1,7 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "./Button";
 
 const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getStockDisponible }) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const cerrar = (cb) => {
+    setVisible(false);
+    setTimeout(cb, 200);
+  };
+
+  const handleClose = () => cerrar(onClose);
+  const handleAgregar = () => cerrar(() => onAgregar({ cantidad, selecciones }));
+
   const [cantidad, setCantidad] = useState(initialQuantities?.cantidad ?? 1);
 
   const initSelecciones = (cant) =>
@@ -20,9 +35,9 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
             const valorInicial = esUnica
               ? Math.min(requerido, stockDisp)
               : Math.min(
-                  initialQuantities?.selecciones?.[item.idProduct]?.[String(v.id)] ?? 0,
-                  stockDisp
-                );
+                initialQuantities?.selecciones?.[item.idProduct]?.[String(v.id)] ?? 0,
+                stockDisp
+              );
             return [String(v.id), valorInicial];
           }))
         ];
@@ -78,19 +93,21 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-      {/* Añadido flex flex-col, h-[80vh] y overflow-hidden para mantener estables las dimensiones */}
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-colors duration-200 ${visible ? "bg-black/70" : "bg-black/0"}`}
+      onClick={handleClose}
+    >
       <div
-        className="relative bg-[#11111F] rounded-3xl p-6 w-[85vw] max-w-[500px] h-[80vh] flex flex-col gap-4 font-['prompt'] overflow-hidden"
+        className={`relative bg-[#11111F] rounded-3xl p-6 w-[85vw] max-w-[500px] h-[80vh] flex flex-col gap-4 font-['prompt'] overflow-hidden transition-all duration-200 ease-out ${visible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4"}`}
         onClick={e => e.stopPropagation()}
       >
 
         {promo.img && (
-        <img
-          src={promo.img}
-          alt={promo.name}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[60%] object-contain opacity-20 blur-[3px] select-none pointer-events-none z-0"
-        />
+          <img
+            src={promo.img}
+            alt={promo.name}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[60%] object-contain opacity-20 blur-[3px] select-none pointer-events-none z-0"
+          />
         )}
 
         {/* Cabecera Fija */}
@@ -134,7 +151,7 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
 
                 return (
                   <div key={item.idProduct} className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between sticky top-0 bg-[#11111F]/90 backdrop-blur-sm py-1 z-20">
+                    <div className="flex items-center justify-between sticky top-0 py-1 z-20">
                       <span className="font-['koulen'] text-[20px] text-white">{producto.name}</span>
                       <span className={`font-['koulen'] text-[14px] px-2 py-0.5 rounded-md ${totalElegido === requerido ? 'text-[#00FF1E] bg-[#00FF1E]/10' : 'text-white/40 bg-white/5'}`}>
                         {totalElegido}/{requerido}
@@ -183,20 +200,20 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
         {/* Botón de acción Fijo en el footer */}
         <div className="z-10 flex justify-center pt-2 pb-1 shrink-0 mt-auto">
           <Button
-            text="AGREGAR"
+            text="CONFIRMAR"
             width="150px"
             height="38px"
             color="#C32CFF"
             textColor="#FFFFFF"
             textSize="20px"
             disabled={!todoOk}
-            click={() => onAgregar({ cantidad, selecciones })}
+            click={handleAgregar}
           />
         </div>
 
-        <button className="font-['koulen'] text-2xl text-[#C32CFF] z-20 absolute top-4 right-5 p-1 hover:scale-110 transition-transform" onClick={onClose}>X</button>
+        <button className="font-['koulen'] text-2xl text-[#C32CFF] z-20 absolute top-4 right-5 p-1 hover:scale-110 transition-transform" onClick={handleClose}>X</button>
       </div>
-    </div >
+    </div>
   );
 };
 

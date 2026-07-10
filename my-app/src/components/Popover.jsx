@@ -1,6 +1,21 @@
+import { useState, useEffect } from "react";
 import Button from "./Button";
 
 const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getStockDisponible }) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const cerrar = (cb) => {
+    setVisible(false);
+    setTimeout(cb, 200);
+  };
+
+  const handleClose = () => cerrar(onClose);
+  const handleAgregar = () => cerrar(() => onAgregar(quantities));
 
   const increment = (id) => {
     const stockDisp = getStockDisponible(String(id));
@@ -12,10 +27,15 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
     setQuantities(q => ({ ...q, [String(id)]: Math.max(0, (q[String(id)] ?? 0) - 1) }));
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-      <div className="relative bg-[#11111F] rounded-3xl p-6 w-[85vw] max-w-[500px] h-[80vh] max-h-[700px] flex flex-col items-center gap-4 font-['prompt']" onClick={e => e.stopPropagation()}>
-        
-        {/* Imagen de fondo decorativa */}
+    <div
+      className={`fixed inset-0 z-60 flex items-center justify-center p-4 transition-colors duration-200 ${visible ? "bg-black/70" : "bg-black/0"}`}
+      onClick={handleClose}
+    >
+      <div
+        className={`relative bg-[#11111F] rounded-3xl p-6 w-[85vw] max-w-[500px] h-[80vh] max-h-[700px] flex flex-col items-center gap-4 font-['prompt'] transition-all duration-200 ease-out ${visible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4"}`}
+        onClick={e => e.stopPropagation()}
+      >
+
         {product.img && (
           <img
             src={product.img}
@@ -23,14 +43,12 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-10deg] h-[70%] object-contain opacity-30 blur-[3px] select-none pointer-events-none z-0"
           />
         )}
-        
-        {/* Header estático */}
+
         <div className="flex flex-col items-center gap-1 z-10 mt-2 mb-1 shrink-0">
           <h1 className="font-bold text-[28px] leading-none text-center px-6">{product.name.toUpperCase()}</h1>
           <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none mt-1">${product.salePrice}</h3>
         </div>
 
-        {/* CONTENEDOR CON SCROLL */}
         <div className="w-full flex-1 overflow-y-auto z-10 pr-1 pt-5 flex flex-col gap-5 custom-scrollbar">
           {product.variants
             .filter(variant => variant.isActive)
@@ -84,7 +102,6 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
             )}
         </div>
 
-        {/* Footer estático */}
         <div className="z-10 shrink-0 pt-2 pb-2">
           <Button
             text="CONFIRMAR"
@@ -93,13 +110,12 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
             color="#C32CFF"
             textColor="#FFFFFF"
             textSize="20px"
-            click={() => onAgregar(quantities)}
+            click={handleAgregar}
           />
         </div>
 
-        {/* Botón Cerrar */}
         <div className="z-10 absolute top-4 right-5">
-          <button className="text-2xl text-[#C32CFF] font-semibold hover:scale-110 active:scale-90 transition-transform" onClick={onClose}>X</button>
+          <button className="text-2xl text-[#C32CFF] font-semibold hover:scale-110 active:scale-90 transition-transform" onClick={handleClose}>X</button>
         </div>
       </div>
     </div>
