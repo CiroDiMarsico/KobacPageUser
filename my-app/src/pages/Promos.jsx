@@ -107,7 +107,7 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
       {/* Info */}
       <div className="flex flex-col items-center gap-1 w-full">
         <h1 className="font-bold text-[18px] leading-none text-center">{promo.name.toUpperCase()}</h1>
-        <h3 className="font-bold text-[20px] text-[#00FF1E]">${promo.price.toLocaleString("es-AR")}</h3>
+        <h3 className="font-bold text-[20px] text-[#00FF1E]">${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(promo.price)}</h3>
 
         {/* Productos */}
         <div className="w-full grid grid-cols-2 gap-2">
