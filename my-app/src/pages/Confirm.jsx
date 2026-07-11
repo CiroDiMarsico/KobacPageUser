@@ -199,7 +199,15 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
 
     const numero = '5493516427916'
     const url = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensaje)}`
-    window.open(url, '_blank')
+
+    // Safari bloquea window.open() después de await — usar <a> programático
+    const link = document.createElement('a')
+    link.href = url
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
 
     if (rubro === 'vapes') {
       localStorage.removeItem("carrito_vapes")
