@@ -291,7 +291,7 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
 
         <hr className="w-[90%] mx-auto mt-6" />
 
-        <div className="flex flex-col mt-6 px-10 gap-6">
+        <div className="flex flex-col justify-center items-center mt-6 px-10 gap-6">
           <div className="flex justify-center items-center gap-4">
             <span className="font-['prompt'] text-3xl font-bold text-center">COMO ABONAS?</span>
             <div className="flex flex-col items-end gap-2">
@@ -300,7 +300,7 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
               <Button text="AMBOS" width="200px" height="50px" click={() => { setShow("ambos") }} color={show == "ambos" ? "#C32CFF" : "#1E1E1E"} textColor={show == "ambos" ? "#ffffff" : "#C32CFF"} />
             </div>
           </div>
-          <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100">¿Tienes un codigo de descuento?</a>
+          <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100 bg-[#6F3784] w-[300px] rounded-xl h-[30px] flex items-center justify-center">¿Tienes un codigo de descuento?</a>
         </div>
 
         <hr className="w-[90%] mx-auto mt-6" />
