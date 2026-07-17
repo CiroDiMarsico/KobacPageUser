@@ -19,7 +19,7 @@ const getAll = async (rubro) => {
         LEFT JOIN categories root ON root.id = c.parent_id
         WHERE v.is_active = TRUE
         AND (root.name = ? OR c.name = ?)
-        ORDER BY p.id
+        ORDER BY c.name ASC, p.name ASC
     `, [rubro, rubro])
 
     const map = {}
