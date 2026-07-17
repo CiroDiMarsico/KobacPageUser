@@ -12,7 +12,7 @@ const getAll = async (rubro) => {
         FROM promos p
         LEFT JOIN promo_items pi ON pi.promo_id = p.id
         WHERE p.rubro = ? AND p.is_active = TRUE
-        ORDER BY p.id
+        ORDER BY p.name DESC
     `, [rubro])
 
     const map = {}
