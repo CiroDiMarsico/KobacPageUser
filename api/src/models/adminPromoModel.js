@@ -18,7 +18,7 @@ const getAll = async (rubro) => {
         LEFT JOIN promo_items pi ON pi.promo_id = p.id
         LEFT JOIN products pr ON pr.id = pi.product_id
         WHERE p.rubro = ?
-        ORDER BY p.id, pi.id
+        ORDER BY p.is_active DESC, p.name DESC 
     `, [rubro])
 
     // costo promedio por producto (promedio del último precio de compra de sus variantes activas)

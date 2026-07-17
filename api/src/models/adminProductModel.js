@@ -45,7 +45,7 @@ const getAll = async (rubro) => {
         LEFT JOIN categories root ON root.id = c.parent_id
         LEFT JOIN variants v ON v.product_id = p.id
         WHERE (root.name = ? OR c.name = ?)
-        ORDER BY p.id, v.id
+        ORDER BY c.name ASC, p.name ASC, v.id
     `, [rubro, rubro])
 
     const map = {}
