@@ -112,8 +112,8 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
       />
       {promo.name.toLowerCase().includes("combo del finde") ? (
         <span className="text-[17px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[42px] absolute right-[-50px] top-[10px] rotate-[35deg]">
-          <p>COMBO</p>
-          <p>DEL FINDE</p>
+          <p>¡COMBO</p>
+          <p>DEL FINDE!</p>
         </span>
       ) : (
         <span className="text-[17px] text-white line-through leading-none font-bold flex items-center justify-center bg-red-500/70 px-2 w-[180px] h-[42px] absolute right-[-50px] top-[10px] rotate-[35deg]">
