@@ -79,12 +79,17 @@ const Product = ({
       document.body.style.overflow = "";
     };
   }, [open]);
-  console.log(product)
 
   return (
-    <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt']">
+    <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt'] relative overflow-hidden">
+      {totalStock <= 2 &&
+        <span className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
+          <p>¡ULTIMAS</p>
+          <p>UNIDADES!</p>
+        </span>
+      }
       <div className="bg-[#fff] rounded-3xl h-[150px] w-[100%] flex items-center justify-center">
-        {product.img && <img src={product.img} alt={product.name} className=" h-[150px]" loading="lazy"/>}
+        {product.img && <img src={product.img} alt={product.name} className=" h-[150px]" loading="lazy" />}
       </div>
       <div className="flex flex-col items-center gap-1">
         <h1 className={`font-bold leading-none text-center transition-all duration-200 ${isLongText ? 'text-[14px]' : 'text-[20px]'
