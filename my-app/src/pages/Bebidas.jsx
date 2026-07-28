@@ -5,8 +5,7 @@ const Bebidas = ({
   agregarAlCarrito,
   data,
   getStockDisponible,
-  carrito,
-  loading
+  carrito
 }) => {
 
   return (
@@ -34,7 +33,6 @@ const Bebidas = ({
           </div>
         </div>
       ))}
-      {loading && <Loading size="small" />}
     </div>
   );
 }

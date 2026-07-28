@@ -154,6 +154,8 @@ const Home = () => {
     return Math.max(0, stockOriginal - enProductos - enPromos);
   };
 
+  if (loading) return <Loading />;
+
   return (
     <main
       className="bg-top bg-repeat text-white pt-[80px] pb-[100px]"
@@ -233,7 +235,7 @@ const Home = () => {
       <div className="mt-[40px] min-h-[50vh]">
         <div key={show} className="animate-slide">
           {show === "promos" && <Promos data={data} promos={promosFiltradas} agregarPromoAlCarrito={agregarPromoAlCarrito} getStockDisponible={getStockDisponible} carrito={carrito} />}
-          {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={dataFiltrada} getStockDisponible={getStockDisponible} carrito={carrito} loading={loading} />}
+          {show === "bebidas" && <Bebidas agregarAlCarrito={agregarAlCarrito} data={dataFiltrada} getStockDisponible={getStockDisponible} carrito={carrito} />}
           {show === "vapes" && <Vapes />}
         </div>
       </div>
