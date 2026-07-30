@@ -163,6 +163,7 @@ const Home = () => {
         backgroundImage: `url(${grafittiKobac})`
       }}
     >
+      <h1 className="sr-only">KOBAC - Delivery de Bebidas y V-Shop en Alta Gracia, Córdoba</h1>
 
       {/*carousel*/}
       <div>

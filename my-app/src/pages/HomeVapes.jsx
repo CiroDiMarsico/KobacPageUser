@@ -120,7 +120,7 @@ const HomeVapes = () => {
 
       {/* Header con botón ir a bebidas */}
       <div className="flex justify-center items-center gap-4 h-[100px]">
-        <Button text="VAPES" width="150px" color={"#C32CFF"} textColor={"#ffffff"} />
+        <Button text="V-SHOP" width="150px" color={"#C32CFF"} textColor={"#ffffff"} />
         <Button text="→ BEBIDAS" width="150px" click={() => navigate("/")} color={"#1E1E1E"} textColor={"#C32CFF"} />
       </div>
 
