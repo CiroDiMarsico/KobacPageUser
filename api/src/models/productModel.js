@@ -19,8 +19,11 @@ const getAll = async (rubro) => {
         LEFT JOIN categories root ON root.id = c.parent_id
         WHERE v.is_active = TRUE
         AND (root.name = ? OR c.name = ?)
-        ORDER BY c.name ASC, p.name ASC
-    `, [rubro, rubro])
+        ORDER BY 
+            CASE WHEN LOWER(?) = 'vapes' THEN p.sale_price END ASC,
+            c.name ASC, 
+            p.name ASC
+    `, [rubro, rubro, rubro]);
 
     const map = {}
     const products = []
