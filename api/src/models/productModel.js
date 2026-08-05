@@ -20,7 +20,7 @@ const getAll = async (rubro) => {
         WHERE v.is_active = TRUE
         AND (root.name = ? OR c.name = ?)
         ORDER BY 
-            CASE WHEN LOWER(?) = 'vapes' THEN p.sale_price END ASC,
+            CASE WHEN LOWER(?) = 'vapes' THEN p.sale_price END DESC,
             c.name ASC, 
             p.name ASC
     `, [rubro, rubro, rubro]);
