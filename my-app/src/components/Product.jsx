@@ -91,7 +91,7 @@ const Product = ({
       
       {
       //20 off
-      product.rubro === "vapes" &&
+      product.rubro !== "bebidas" &&
         <span className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
           <p>20% OFF</p>
         </span>
