@@ -82,6 +82,7 @@ const Product = ({
 
   const ALLOWED_CATEGORIES = ["5", "6", "7", "8", "9", "10", "13"];
   const ALLOWED_CATEGORIES2 = ["3", "4", "11", "12"];
+  console.log("Categoría del producto:", product.category_id, "Tipo:", typeof product.category_id);
 
   return (
     <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt'] relative overflow-hidden">
