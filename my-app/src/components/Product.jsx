@@ -112,8 +112,8 @@ const Product = ({
         </h3>
         {
           ALLOWED_CATEGORIES2.includes(String(product.category)) &&
-          <h3 className="text-[14px] text-red-500 line-through">
-            ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice * 1.2)}
+          <h3 className="font-bold text-[14px] text-red-500 line-through">
+            ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice / 0.8)}
           </h3>
         }
       </div>
