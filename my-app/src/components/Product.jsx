@@ -84,7 +84,7 @@ const Product = ({
   const ALLOWED_CATEGORIES2 = ["elfbar", "ignite", "lost mary", "oxbar"];
 
   return (
-    <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt'] relative overflow-hidden">
+    <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt'] relative overflow-hidden" onClick={abrirPopover}>
       {totalStock > 0 && totalStock <= 2 && ALLOWED_CATEGORIES.includes(String(product.category)) && (
         <div className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
           <p>¡ULTIMAS</p>
@@ -111,7 +111,7 @@ const Product = ({
           ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice)}
         </h3>
       </div>
-      <Button text={textoBoton} width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" click={abrirPopover} disabled={totalStock === 0} />
+      <Button text={textoBoton} width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" disabled={totalStock === 0} />
       {open && (
         <Popover
           product={product}
