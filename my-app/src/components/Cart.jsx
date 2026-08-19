@@ -183,6 +183,8 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
         </div>
 
         <div className="px-6 pb-8 pt-4 border-t border-white/10">
+          <a className="font-[prompt] text-[20px] text-center text-white/90">¿estas con amigos?</a>
+          <h4 className="font-[prompt] text-[14px] text-center text-white/80">dividi el total</h4>
           <div className="border-t border-white/20 mb-4" />
           <div className="flex justify-between items-center">
             <span className="font-['koulen'] text-[26px] tracking-widest">TOTAL:</span>
