@@ -183,8 +183,8 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
         </div>
 
         <div className="px-6 pb-3 pt-4 border-t border-white/10">
-          <h2 className="font-[prompt] text-[18px] text-center text-white/90 font-bold">¿ESTAS CON AMIGOS?</h2>
-          <h4 className="font-[prompt] text-[12px] text-center text-white/80 pb-3">DIVIDI EL TOTAL</h4>
+          <h2 className="font-[prompt] text-[16px] text-center text-white/90 font-bold">¿ESTAS CON AMIGOS?</h2>
+          <h4 className="font-[prompt] text-[10px] text-center text-white/80 pb-3">DIVIDI EL TOTAL</h4>
           <div className="border-t border-white/20 mb-3" />
           <div className="flex justify-between items-center">
             <span className="font-['koulen'] text-[26px] tracking-widest">TOTAL:</span>
