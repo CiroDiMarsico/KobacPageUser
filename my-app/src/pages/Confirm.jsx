@@ -300,7 +300,8 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
               <Button text="AMBOS" width="200px" height="50px" click={() => { setShow("ambos") }} color={show == "ambos" ? "#C32CFF" : "#1E1E1E"} textColor={show == "ambos" ? "#ffffff" : "#C32CFF"} />
             </div>
           </div>
-          <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100 bg-[#6F3784] w-[300px] rounded-xl h-[30px] flex items-center justify-center">¿Tienes un cupon de descuento?</a>
+          { rubro == "vapes" &&
+          <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100 bg-[#6F3784] w-[300px] rounded-xl h-[30px] flex items-center justify-center">¿Tienes un cupon de descuento?</a>}
         </div>
 
         <hr className="w-[90%] mx-auto mt-6" />
