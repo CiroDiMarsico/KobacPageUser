@@ -126,15 +126,15 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => handleCantidad(Math.max(0, cantidad - 1))}
-              className="bg-[#C32CFF] rounded-full w-[38px] h-[38px] text-3xl flex items-center justify-center active:scale-95 transition-transform"
-            >-</button>
-            <span className="font-['koulen'] text-[20px] w-5 text-center">{cantidad}</span>
-            <button
               onClick={() => handleCantidad(cantidad + 1)}
               disabled={!puedeAgregarMasPromos()}
               className="bg-[#C32CFF] rounded-full w-[38px] h-[38px] text-3xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
             >+</button>
+            <span className="font-['koulen'] text-[20px] w-5 text-center">{cantidad}</span>
+            <button
+              onClick={() => handleCantidad(Math.max(0, cantidad - 1))}
+              className="bg-[#C32CFF] rounded-full w-[38px] h-[38px] text-3xl flex items-center justify-center active:scale-95 transition-transform"
+            >-</button>
           </div>
         </div>
 
@@ -174,16 +174,16 @@ const PopoverPromo = ({ promo, data, onClose, onAgregar, initialQuantities, getS
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
                               <button
-                                onClick={() => increment(item.idProduct, String(variant.id))}
-                                disabled={totalElegido >= requerido || yaElegido >= stockDisp}
-                                className="bg-[#C32CFF] rounded-full w-[36px] h-[36px] text-2xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
-                              >+</button>
-                              <span className="font-['koulen'] text-[18px] w-5 text-center">{yaElegido}</span>
-                              <button
                                 onClick={() => decrement(item.idProduct, String(variant.id))}
                                 className="bg-[#C32CFF] rounded-full w-[36px] h-[36px] text-2xl flex items-center justify-center active:scale-95 transition-transform"
                                 disabled={yaElegido === 0}
                               >-</button>
+                              <span className="font-['koulen'] text-[18px] w-5 text-center">{yaElegido}</span>
+                              <button
+                                onClick={() => increment(item.idProduct, String(variant.id))}
+                                disabled={totalElegido >= requerido || yaElegido >= stockDisp}
+                                className="bg-[#C32CFF] rounded-full w-[36px] h-[36px] text-2xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
+                              >+</button>
                             </div>
                           </div>
                         );

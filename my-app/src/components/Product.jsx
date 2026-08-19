@@ -110,6 +110,12 @@ const Product = ({
         <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none">
           ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice)}
         </h3>
+        {
+          ALLOWED_CATEGORIES2.includes(String(product.category)) &&
+          <h3 className="text-[14px] text-red-500 line-through">
+            ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice * 1.2)}
+          </h3>
+        }
       </div>
       <Button text={textoBoton} width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" disabled={totalStock === 0} />
       {open && (

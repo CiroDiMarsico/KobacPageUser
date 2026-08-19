@@ -79,13 +79,9 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
                 {variant.stock > 0 &&
                   <div className="flex items-center gap-4 relative shrink-0">
                     <button
-                      onClick={() => increment(variant.id)}
-                      disabled={
-                        quantities[String(variant.id)] >= getStockDisponible(variant.id) ||
-                        getStockDisponible(variant.id) === 0
-                      }
-                      className="bg-[#C32CFF] rounded-full w-[45px] h-[45px] text-3xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
-                    >+</button>
+                      onClick={() => decrement(variant.id)}
+                      className="bg-[#C32CFF] rounded-full w-[45px] h-[45px] text-4xl flex items-center justify-center active:scale-95 transition-transform"
+                    >-</button>
                     <h1 className="font-[koulen] text-[22px] w-4 text-center">{quantities[String(variant.id)] ?? 0}</h1>
                     {(quantities[String(variant.id)] >= getStockDisponible(variant.id) || getStockDisponible(variant.id) === 0) && (
                       <span className="font-['koulen'] text-[11px] absolute text-center -top-[18px] left-1/2 -translate-x-1/2 text-[#FF4444] whitespace-nowrap bg-[#11111F] px-1 rounded">
@@ -93,9 +89,13 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
                       </span>
                     )}
                     <button
-                      onClick={() => decrement(variant.id)}
-                      className="bg-[#C32CFF] rounded-full w-[45px] h-[45px] text-4xl flex items-center justify-center active:scale-95 transition-transform"
-                    >-</button>
+                      onClick={() => increment(variant.id)}
+                      disabled={
+                        quantities[String(variant.id)] >= getStockDisponible(variant.id) ||
+                        getStockDisponible(variant.id) === 0
+                      }
+                      className="bg-[#C32CFF] rounded-full w-[45px] h-[45px] text-3xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
+                    >+</button>
                   </div>
                 }
               </div>
