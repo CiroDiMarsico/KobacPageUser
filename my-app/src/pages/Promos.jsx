@@ -102,7 +102,7 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
   }, [open]);
 
   return (
-    <div className="w-[95%] bg-[#1E1E1E] rounded-3xl flex flex-col items-center justify-between p-4 font-['prompt'] gap-4 relative overflow-hidden">
+    <div className="w-[95%] bg-[#1E1E1E] rounded-3xl flex flex-col items-center justify-between p-4 font-['prompt'] gap-4 relative overflow-hidden" onClick={abrirPopover}>
 
       {/* Imagen */}
       <img
@@ -156,7 +156,6 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
         color="#C32CFF"
         textColor="#FFFFFF"
         textSize="17px"
-        click={abrirPopover}
       />
 
       {open && (
