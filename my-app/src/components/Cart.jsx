@@ -36,17 +36,20 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
   };
 
   useEffect(() => {
-      if (open) {
-        document.body.style.overflow = 'hidden'
-      } else {
-        document.body.style.overflow = ''
-      }
-      return () => {
-        document.body.style.overflow = ''
-      }
-    }, [open])
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
 
   const [promoDataEditando, setPromoDataEditando] = useState(null);
+
+  const [amigos, setAmigos] = useState(null);
+  const [amigosEditando, setAmigosEditando] = useState(true);
 
   const abrirEditarPromo = (item) => {
     const promo = promos.find(p => p.id === item.idPromo);
@@ -183,13 +186,21 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
         </div>
 
         <div className="px-6 pb-3 pt-4 border-t border-white/10">
-          <h2 className="font-[prompt] text-[16px] text-center text-white/90 font-bold">¿ESTAS CON AMIGOS?</h2>
-          <h4 className="font-[prompt] text-[10px] text-center text-white/80 pb-3">DIVIDI EL TOTAL</h4>
+          <button className="w-full" onClick={() => { setAmigosEditando(false) }}>
+            <h2 className="font-[prompt] text-[16px] text-center text-white/90 font-bold">¿ESTAS CON AMIGOS?</h2>
+            <h4 className="font-[prompt] text-[10px] text-center text-white/80 pb-3">DIVIDI EL TOTAL</h4>
+          </button>
           <div className="border-t border-white/20 mb-3" />
           <div className="flex justify-between items-center">
             <span className="font-['koulen'] text-[26px] tracking-widest">TOTAL:</span>
             <span className="font-['koulen'] text-[26px] text-[#00FF1E]">${total.toLocaleString("es-AR")}</span>
           </div>
+          {amigos &&
+            <div className="flex justify-between items-center">
+              <span className="font-['koulen'] text-[18px] tracking-widest">TOTAL ENTRE {amigos}:</span>
+              <span className="font-['koulen'] text-[18px] text-[#00FF1E]">${(total / amigos).toLocaleString("es-AR")} c/u</span>
+            </div>
+          }
           <p className="text-white/90 text-[14px] text-right font-['prompt'] mb-4">+ ENVIO</p>
           <Button
             text="CONFIRMAR"
@@ -233,6 +244,34 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
           getStockDisponible={(variantId) => getStockDisponible(variantId, promoDataEditando.key)}
         />
       )}
+      {/* Popover amigos */}
+
+      <div hidden={amigosEditando} className="fixed inset-0 z-60 flex items-center justify-center bg-black/70" onClick={() => { setAmigosEditando(true) }}>
+        <div className="relative bg-[#11111F] rounded-3xl p-6 w-[85vw] h-[35vh] flex flex-col items-center justify-center gap-4 font-['prompt']" onClick={e => e.stopPropagation()}>
+          <h1 className="font-['prompt'] text-[42px] text-center pt-0 pb-0 font-semibold">DIVIDIR TOTAL</h1>
+          <input
+            type="number"
+            placeholder="CANTIDAD DE PERSONAS"
+            className={`bg-[#4E486E] w-[100%] h-[50px] rounded-full font-[koulen] text-[20px] px-[20px] outline-none focus:outline-none focus:ring-0`}
+            onChange={(e) => {
+              const valor = e.target.value;
+
+              if (valor === "") {
+                setAmigos("");
+                return;
+              }
+              if (parseInt(valor) < 1) {
+                setAmigos(1);
+              } else {
+                setAmigos(valor);
+              }
+            }}
+            value={amigos}
+            min={1}
+          />
+          <Button text="CONFIRMAR" width="100%" height="44px" color="#C32CFF" textColor="#FFFFFF" textSize="20px" click={() => { setAmigosEditando(true) }} />
+        </div>
+      </div>
     </div>
   );
 };
