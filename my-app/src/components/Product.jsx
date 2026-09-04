@@ -80,25 +80,15 @@ const Product = ({
     };
   }, [open]);
 
-  const ALLOWED_CATEGORIES = ["bebidas blancas", "aperitivos", "vinos", "energizantes", "gaseosas y jugos", "otros", "cervezas"];
-  const ALLOWED_CATEGORIES2 = ["elfbar", "ignite", "lost mary", "oxbar"];
-
   return (
     <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt'] relative overflow-hidden" onClick={abrirPopover}>
-      {totalStock > 0 && totalStock <= 2 && ALLOWED_CATEGORIES.includes(String(product.category)) && (
+      {totalStock > 0 && totalStock <= 2 && (
         <div className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
           <p>¡ULTIMAS</p>
           <p>UNIDADES!</p>
         </div>
       )}
 
-      {
-        //20 off
-        ALLOWED_CATEGORIES2.includes(String(product.category)) &&
-        <span className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
-          <p>20% OFF</p>
-        </span>
-      }
       <div className="bg-[#fff] rounded-3xl h-[150px] w-[100%] flex items-center justify-center">
         {product.img && <img src={product.img} alt={product.name} className=" h-[150px]" loading="lazy" />}
       </div>
