@@ -80,14 +80,22 @@ const Product = ({
     };
   }, [open]);
 
+  //const bebidas = [5, 6, 7, 8, 9, 10, 13];
+  //const vapes = [3, 4, 11, 12];
+
   return (
     <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt'] relative overflow-hidden" onClick={abrirPopover}>
-      {totalStock > 0 && totalStock <= 2 && (
+      {totalStock > 0 && totalStock <= 2 && 1===2 && (
         <div className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
           <p>¡ULTIMAS</p>
           <p>UNIDADES!</p>
         </div>
       )}
+      {
+        <div className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
+          <p>20% OFF</p>
+        </div>
+      }
 
       <div className="bg-[#fff] rounded-3xl h-[150px] w-[100%] flex items-center justify-center">
         {product.img && <img src={product.img} alt={product.name} className=" h-[150px]" loading="lazy" />}
@@ -99,6 +107,9 @@ const Product = ({
         </h1>
         <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none">
           ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice)}
+        </h3>
+        <h3 className="font-bold text-[14px] text-[#ff0000] leading-none line-through mt-1">
+          ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice / 0.8)}
         </h3>
       </div>
       <Button text={textoBoton} width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" disabled={totalStock === 0} />
