@@ -61,7 +61,7 @@ const Home = () => {
     })
   );
 
-  const [show, setShow] = useState("promos");
+  const [show, setShow] = useState("bebidas");
 
   const [carrito, setCarrito] = useCarrito("carrito");
 
