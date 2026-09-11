@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Button from "../components/Button";
 import Promos from "./Promos";
 import Bebidas from "./Bebidas";
 import Vapes from "./Vapes";
 import Carousel from "../components/Carousel";
 import Loading from "../components/Loading";
+import ErrorCarga from "../components/ErrorCarga";
 import Cart from "../components/Cart";
 import grafittiKobac from "/assets/grafittiKobac.webp";
 import lupaIcon from "/assets/lupa.webp";
@@ -15,36 +16,44 @@ const Home = () => {
   //-------------DATOS-------------
   // ------------------------------
   const [data, setData] = useState([])
-  const [loading, setLoading] = useState(false)
-
-
-  useEffect(() => {
-    setLoading(true)
-    api.get('/products?rubro=bebidas')
-      .then(res => setData(res.data))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false))
-  }, [])
-
   const [promos, setPromos] = useState([])
-
-  useEffect(() => {
-    api.get('/promos?rubro=bebidas')
-      .then(res => setPromos(res.data))
-      .catch(err => console.error(err))
-  }, [])
-
   const [carousel, setCarousel] = useState([])
   const [marquee, setMarquee] = useState([])
 
-  useEffect(() => {
-    api.get('/config')
-      .then(res => {
-        setCarousel(res.data.carousel)
-        setMarquee(res.data.marquee)
+  // Arranca en true: si arrancara en false se pinta un frame de pagina vacia
+  // antes de que salga el pedido.
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  // Los tres pedidos comparten estado. Antes cada uno tenia su propio .catch que
+  // solo logueaba, asi que si la API fallaba la pagina se renderizaba entera
+  // vacia — sin carousel, sin marquee y sin productos — y no quedaba mas opcion
+  // que recargar a mano.
+  const cargarDatos = useCallback(() => {
+    setLoading(true)
+    setError(false)
+
+    Promise.all([
+      api.get('/products?rubro=bebidas'),
+      api.get('/promos?rubro=bebidas'),
+      api.get('/config'),
+    ])
+      .then(([resProductos, resPromos, resConfig]) => {
+        setData(resProductos.data)
+        setPromos(resPromos.data)
+        setCarousel(resConfig.data.carousel)
+        setMarquee(resConfig.data.marquee)
       })
-      .catch(err => console.error(err))
+      .catch(err => {
+        console.error(err)
+        setError(true)
+      })
+      .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    cargarDatos()
+  }, [cargarDatos])
   // ------------------------------
 
   const [search, setSearch] = useState("");
@@ -155,6 +164,7 @@ const Home = () => {
   };
 
   if (loading) return <Loading />;
+  if (error) return <ErrorCarga reintentar={cargarDatos} />;
 
   return (
     <main
