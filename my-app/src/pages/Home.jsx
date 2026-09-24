@@ -70,7 +70,7 @@ const Home = () => {
     })
   );
 
-  const [show, setShow] = useState("bebidas");
+  const [show, setShow] = useState("promos");
 
   const [carrito, setCarrito] = useCarrito("carrito");
 

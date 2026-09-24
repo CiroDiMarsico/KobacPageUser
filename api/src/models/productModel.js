@@ -22,7 +22,8 @@ const getAll = async (rubro) => {
         ORDER BY 
             CASE WHEN LOWER(?) = 'vapes' THEN p.sale_price END DESC,
             c.name ASC, 
-            p.name ASC
+            p.name ASC,
+            v.stock DESC
     `, [rubro, rubro, rubro]);
 
     const map = {}
