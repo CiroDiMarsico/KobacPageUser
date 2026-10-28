@@ -8,6 +8,7 @@ import carritoMedio from "/assets/carritoMedio.webp";
 import carritoLleno from "/assets/carritoLleno.webp";
 import carritoRelleno from "/assets/carritoRelleno.webp";
 import { calcDescuentoVapes, PORCENTAJE_DESCUENTO_VAPES } from "../utils/descuentoVapes";
+import { tarjetasOtros, totalExtras, DESCUENTO_EXTRAS_PROMO } from "../utils/otros";
 
 const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoAlCarrito, getStockDisponible, rubro = "bebidas" }) => {
   const [open, setOpen] = useState(false);
@@ -17,11 +18,14 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
   const descuentoVapes = rubro === "vapes" ? calcDescuentoVapes(carrito) : { total: 0, porProducto: {} };
 
   const total = carrito.reduce((acc, item) => {
-    if (item.isPromo) return acc + item.precio * item.cantidad;
+    if (item.isPromo) return acc + item.precio * item.cantidad + totalExtras(item);
     if (!item.variants) return acc;
     const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
     return acc + item.precio * cantTotal;
   }, 0) - descuentoVapes.total;
+
+  // Sugerencias para sumar al final del carrito
+  const otros = tarjetasOtros(data);
 
   const totalVariantes = carrito.reduce((acc, item) => {
     if (item.isPromo) return acc + item.cantidad;
@@ -57,7 +61,7 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
 
   const abrirEditarPromo = (item) => {
     const promo = promos.find(p => p.id === item.idPromo);
-    setPromoDataEditando({ promo, initialQuantities: { cantidad: item.cantidad, selecciones: item.selecciones }, key: item.key });
+    setPromoDataEditando({ promo, initialQuantities: { cantidad: item.cantidad, selecciones: item.selecciones, extras: item.extras ?? [] }, key: item.key });
   };
 
   return (
@@ -103,62 +107,52 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
 
         <h1 className="font-['prompt'] text-[42px] text-center pt-6 pb-2 font-semibold">CARRITO</h1>
 
-        <div className="flex-1 overflow-y-auto px-6 flex flex-col gap-5 py-4">
+        <div className="flex-1 overflow-y-auto px-4 flex flex-col gap-3 py-4">
           {carrito
             .filter(item => !item.isPromo && item.variants && Object.values(item.variants).some(cant => cant > 0))
             .map(item => {
               const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
               const productoData = data.find(p => p.id === item.idProduct);
               const descuentoItem = descuentoVapes.porProducto[item.idProduct];
+              const variantes = Object.entries(item.variants).filter(([_, cant]) => cant > 0);
+              // Si el producto tiene una sola variante no hace falta listar el sabor
+              const mostrarVariantes = (productoData?.variants.length ?? 0) > 1;
               return (
                 <div
                   key={item.idProduct}
                   onClick={() => abrirEditarProducto(productoData)}
-                  className="cursor-pointer active:opacity-70 transition-opacity"
+                  className="flex items-center gap-3 bg-white/5 rounded-2xl p-3 cursor-pointer active:opacity-70 transition-opacity"
                 >
-                  <div className="flex justify-between items-center mb-1">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="h-[25px] w-[25px] flex items-center justify-center rounded-md">
-                        <img src="/assets/editar.webp" className="h-[18px]" alt="" />
-                      </button>
-                      <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
-                    </div>
-                    <div className="flex flex-col items-end leading-none">
-                      {descuentoItem && (
-                        <span className="font-['koulen'] text-[14px] text-white/50 line-through">
-                          ${(item.precio * cantTotal).toLocaleString("es-AR")}
-                        </span>
-                      )}
-                      <span className="font-['koulen'] text-[20px] text-[#00FF1E]">
-                        ${(item.precio * cantTotal - (descuentoItem?.monto ?? 0)).toLocaleString("es-AR")}
-                      </span>
-                    </div>
+                  <div className="w-[48px] h-[48px] rounded-xl bg-white/5 flex items-center justify-center shrink-0 overflow-hidden">
+                    {productoData?.img && <img src={productoData.img} alt="" className="h-full object-contain" />}
                   </div>
-                  <div className="flex flex-col gap-1 pl-1">
-                    {Object.entries(item.variants)
-                      .filter(([_, cant]) => cant > 0)
-                      .map(([idVariant, cant]) => (
-                        <div key={idVariant} className="flex items-center gap-2">
-                          <span className="font-['koulen'] text-[14px] text-white/80 uppercase tracking-wider">
-                            {productoData?.variants.find(v => String(v.id) === idVariant)?.name}
-                          </span>
-                          <div className="flex-1 border-b border-white/20" />
-                          <span className="font-['koulen'] text-[16px]">{cant}</span>
-                        </div>
-                      ))}
+                  <div className="flex flex-col flex-1 min-w-0 font-['prompt']">
+                    <h2 className="font-bold text-[14px] leading-tight uppercase">{item.nombre}</h2>
+                    {mostrarVariantes ? (
+                      variantes.map(([idVariant, cant]) => (
+                        <span key={idVariant} className="text-[12px] text-white/60 leading-tight">
+                          {productoData?.variants.find(v => String(v.id) === idVariant)?.name} x{cant}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[12px] text-white/60">x{cantTotal}</span>
+                    )}
                     {descuentoItem && (
-                      <div className="flex items-center gap-2">
-                        <span className="font-['koulen'] text-[14px] text-[#C32CFF] uppercase tracking-wider">
-                          {descuentoItem.unidades} u. con {PORCENTAJE_DESCUENTO_VAPES}% off
-                        </span>
-                        <div className="flex-1 border-b border-[#C32CFF]/40" />
-                        <span className="font-['koulen'] text-[16px] text-[#C32CFF]">
-                          -${descuentoItem.monto.toLocaleString("es-AR")}
-                        </span>
-                      </div>
+                      <span className="text-[12px] text-[#C32CFF] leading-tight">
+                        {descuentoItem.unidades} u. con {PORCENTAJE_DESCUENTO_VAPES}% off
+                      </span>
                     )}
                   </div>
-                  <div className="border-b border-white/10 mt-3" />
+                  <div className="flex flex-col items-end leading-none shrink-0 font-['prompt']">
+                    {descuentoItem && (
+                      <span className="text-[12px] text-white/40 line-through">
+                        ${(item.precio * cantTotal).toLocaleString("es-AR")}
+                      </span>
+                    )}
+                    <span className="font-bold text-[16px] text-[#00FF1E]">
+                      ${(item.precio * cantTotal - (descuentoItem?.monto ?? 0)).toLocaleString("es-AR")}
+                    </span>
+                  </div>
                 </div>
               );
             })}
@@ -170,42 +164,66 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
               <div
                 key={item.key}
                 onClick={() => abrirEditarPromo(item)}
-                className="cursor-pointer active:opacity-70 transition-opacity"
+                className="flex items-center gap-3 bg-white/5 rounded-2xl p-3 cursor-pointer active:opacity-70 transition-opacity"
               >
-                <div className="flex justify-between items-center mb-1">
-                  <div className="flex items-center justify-center gap-2">
-                    <button className="h-[25px] w-[25px] flex items-center justify-center rounded-md">
-                      <img src="/assets/editar.webp" className="h-[18px]" alt="" />
-                    </button>
-                    <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
-                  </div>
-                  <span className="font-['koulen'] text-[20px] text-[#00FF1E]">
-                    ${(item.precio * item.cantidad).toLocaleString("es-AR")}
-                  </span>
+                <div className="w-[48px] h-[48px] rounded-xl bg-white/5 flex items-center justify-center shrink-0 overflow-hidden">
+                  {promo?.img && <img src={promo.img} alt="" className="h-full w-full object-cover" />}
                 </div>
-                <div className="flex flex-col gap-1 pl-1">
+                <div className="flex flex-col flex-1 min-w-0 font-['prompt']">
+                  <h2 className="font-bold text-[14px] leading-tight uppercase">{item.nombre}</h2>
+                  <span className="text-[12px] text-white/60">x{item.cantidad}</span>
                   {promo?.items.map(promoItem => {
                     const producto = data.find(p => p.id === promoItem.idProduct);
-                    return Object.entries(item.selecciones[promoItem.idProduct] ?? {})
-                      .filter(([_, cant]) => cant > 0)
-                      .map(([variantId, cant]) => {
-                        const variante = producto?.variants.find(v => String(v.id) === variantId);
-                        return (
-                          <div key={variantId} className="flex items-center gap-2">
-                            <span className="font-['koulen'] text-[14px] text-white/80 uppercase tracking-wider">
-                              {producto?.name}
-                            </span>
-                            <div className="flex-1 border-b border-white/20" />
-                            <span className="font-['koulen'] text-[16px]">{variante?.name} x{cant}</span>
-                          </div>
-                        );
-                      });
+                    const elegidas = Object.entries(item.selecciones[promoItem.idProduct] ?? {}).filter(([_, cant]) => cant > 0);
+                    const unica = (producto?.variants.length ?? 0) <= 1;
+                    return elegidas.map(([variantId, cant]) => {
+                      const variante = producto?.variants.find(v => String(v.id) === variantId);
+                      return (
+                        <span key={variantId} className="text-[12px] text-white/60 leading-tight">
+                          {unica ? producto?.name : `${producto?.name} · ${variante?.name}`} x{cant}
+                        </span>
+                      );
+                    });
                   })}
+                  {(item.extras ?? []).map(extra => (
+                    <span key={extra.variantId} className="text-[12px] text-[#C32CFF] leading-tight">
+                      + {extra.nombre} x{extra.cantidad} ({DESCUENTO_EXTRAS_PROMO}% off)
+                    </span>
+                  ))}
                 </div>
-                <div className="border-b border-white/10 mt-3" />
+                <span className="font-['prompt'] font-bold text-[16px] text-[#00FF1E] shrink-0">
+                  ${(item.precio * item.cantidad + totalExtras(item)).toLocaleString("es-AR")}
+                </span>
               </div>
             );
           })}
+
+          {/* Te olvidaste de algo: productos de "otros" */}
+          {carrito.length > 0 && otros.length > 0 && (
+            <div className="flex flex-col gap-3 mt-2">
+              <h2 className="font-['prompt'] font-bold text-[16px]">¿TE OLVIDASTE DE ALGO?</h2>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {otros.map(tarjeta => {
+                  const enCarrito = Number(carrito.find(i => !i.isPromo && i.idProduct === tarjeta.producto.id)?.variants?.[tarjeta.variantId]) || 0;
+                  const sinStock = getStockDisponible(tarjeta.variantId) <= 0;
+                  return (
+                    <div key={tarjeta.variantId} className="w-[105px] shrink-0 flex flex-col items-center gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-2 font-['prompt']">
+                      <div className="w-[44px] h-[44px] rounded-xl bg-white/5 flex items-center justify-center overflow-hidden">
+                        {tarjeta.producto.img && <img src={tarjeta.producto.img} alt="" className="h-full object-contain" />}
+                      </div>
+                      <span className="font-bold text-[12px] text-center leading-tight line-clamp-2 min-h-[30px]">{tarjeta.nombre}</span>
+                      <span className="font-bold text-[13px] text-[#00FF1E]">${tarjeta.producto.salePrice.toLocaleString("es-AR")}</span>
+                      <button
+                        onClick={() => agregarAlCarrito(tarjeta.producto, { [tarjeta.variantId]: enCarrito + 1 })}
+                        disabled={sinStock}
+                        className="w-full h-[30px] rounded-full bg-[#C32CFF] font-bold text-[16px] leading-none disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
+                      >{enCarrito > 0 ? `+ (${enCarrito})` : "+"}</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="px-6 pb-3 pt-4 border-t border-white/10">

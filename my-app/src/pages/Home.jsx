@@ -116,7 +116,8 @@ const Home = () => {
     });
   };
 
-  const agregarPromoAlCarrito = (promo, { cantidad, selecciones }, keyExistente = null) => {
+  // extras: productos de "otros" sumados desde la promo, con 10% off
+  const agregarPromoAlCarrito = (promo, { cantidad, selecciones, extras = [] }, keyExistente = null) => {
     setCarrito(prev => {
       const key = keyExistente ?? `promo_${promo.id}`;
 
@@ -127,14 +128,14 @@ const Home = () => {
       const existe = prev.find(item => item.key === key);
       if (existe) {
         return prev.map(item =>
-          item.key === key ? { ...item, cantidad, selecciones } : item
+          item.key === key ? { ...item, cantidad, selecciones, extras } : item
         );
       }
 
       return [...prev, {
         key, isPromo: true, idPromo: promo.id,
         nombre: promo.name, precio: promo.price,
-        cantidad, selecciones
+        cantidad, selecciones, extras
       }];
     });
   };
@@ -158,7 +159,10 @@ const Home = () => {
         const totalEnEstaPromo = Object.values(item.selecciones).reduce((a, variantMap) => {
           return a + (Number(variantMap[variantIdStr]) || 0);
         }, 0);
-        return acc + totalEnEstaPromo;
+        const enExtras = (item.extras ?? [])
+          .filter(e => e.variantId === variantIdStr)
+          .reduce((a, e) => a + e.cantidad, 0);
+        return acc + totalEnEstaPromo + enExtras;
       }, 0);
 
     return Math.max(0, stockOriginal - enProductos - enPromos);

@@ -8,6 +8,10 @@ const pool = require('../db/connection')
 // my-app/src/utils/descuentoVapes.js.
 const PORCENTAJE_DESCUENTO_VAPES = 25
 
+// Productos de "otros" sumados desde una promo: 10% off. Tiene que coincidir con
+// my-app/src/utils/otros.js.
+const PORCENTAJE_DESCUENTO_EXTRAS_PROMO = 10
+
 const create = async (req, res) => {
     const conn = await pool.getConnection()
     try {
@@ -48,6 +52,34 @@ const create = async (req, res) => {
                             })
                         }
                     }
+                }
+
+                // Extras de "otros" sumados desde la promo: 10% off si la promo existe.
+                // Van al subtotal de promos, asi el cupon no se les aplica encima.
+                for (const extra of item.extras || []) {
+                    const quantity = Number(extra.cantidad)
+                    if (!(quantity > 0)) continue
+                    const [[product]] = await conn.query(
+                        `SELECT p.sale_price, LOWER(c.name) = 'otros' AS is_otros
+                 FROM products p
+                 JOIN variants v ON v.product_id = p.id
+                 LEFT JOIN categories c ON c.id = p.category_id
+                 WHERE v.id = ?`,
+                        [extra.variantId]
+                    )
+                    const salePrice = product ? Number(product.sale_price) : 0
+                    const conDescuento = promo && product?.is_otros
+                    const unitPrice = conDescuento
+                        ? Math.round(salePrice * (100 - PORCENTAJE_DESCUENTO_EXTRAS_PROMO) / 100)
+                        : salePrice
+                    if (conDescuento) subtotalPromos += unitPrice * quantity
+                    else subtotalProductos += unitPrice * quantity
+                    items.push({
+                        variantId: Number(extra.variantId),
+                        promoId: null,
+                        quantity,
+                        unitPrice
+                    })
                 }
             } else {
                 for (const [variantId, quantity] of Object.entries(item.variants || {})) {

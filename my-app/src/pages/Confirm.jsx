@@ -4,6 +4,7 @@ import Button from "../components/Button";
 import api from '../api/axios'
 import ubiIcon from '/assets/ubi.webp'
 import { calcDescuentoVapes, PORCENTAJE_DESCUENTO_VAPES } from '../utils/descuentoVapes'
+import { totalExtras, DESCUENTO_EXTRAS_PROMO } from '../utils/otros'
 
 const Confirm = () => {
 
@@ -55,7 +56,7 @@ const Confirm = () => {
 
   const calcSubtotalPromos = (c) => c.reduce((acc, item) => {
     if (!item.isPromo) return acc
-    return acc + item.precio * item.cantidad
+    return acc + item.precio * item.cantidad + totalExtras(item)
   }, 0)
 
   // 25% off en las unidades pares, solo en vapes. El backend lo recalcula igual.
@@ -108,7 +109,13 @@ const Confirm = () => {
           // Si la promo quedó incompleta, eliminarla entera
           if (promoIncompleta) return null
 
-          return { ...item, selecciones: nuevasSelecciones }
+          // Extras de "otros" sumados a la promo: mismo ajuste que los productos sueltos
+          const nuevosExtras = (item.extras ?? [])
+            .filter(e => !agotadosIds.has(e.variantId))
+            .map(e => parcialesMap.has(e.variantId) ? { ...e, cantidad: parcialesMap.get(e.variantId) } : e)
+            .filter(e => e.cantidad > 0)
+
+          return { ...item, selecciones: nuevasSelecciones, extras: nuevosExtras }
         } else {
           const nuevasVariants = {}
           for (const [variantId, qty] of Object.entries(item.variants)) {
@@ -158,7 +165,10 @@ const Confirm = () => {
               return `  •(${cant}) ${producto?.name} → ${variante?.name}`
             }).join('\n')
         }).join('\n')
-        return `*${item.nombre}* x${item.cantidad} - $${(item.precio * item.cantidad).toLocaleString('es-AR')}\n${detalle}`
+        const extrasTexto = (item.extras ?? [])
+          .map(e => `\n  ➕(${e.cantidad}) ${e.nombre} (${DESCUENTO_EXTRAS_PROMO}% off) - $${(e.precio * e.cantidad).toLocaleString('es-AR')}`)
+          .join('')
+        return `*${item.nombre}* x${item.cantidad} - $${(item.precio * item.cantidad + totalExtras(item)).toLocaleString('es-AR')}\n${detalle}${extrasTexto}`
       }).join('\n\n')
 
     return `

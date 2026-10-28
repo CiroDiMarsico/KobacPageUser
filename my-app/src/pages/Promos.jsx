@@ -56,6 +56,7 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
     itemEnCarrito?.selecciones ?? initSelecciones()
   );
   const [cantidad, setCantidad] = useState(itemEnCarrito?.cantidad ?? 0);
+  const [extras, setExtras] = useState(itemEnCarrito?.extras ?? []);
 
   // Sincroniza cuando el carrito cambia desde afuera (ej: edición desde Cart)
   useEffect(() => {
@@ -63,9 +64,11 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
     if (item) {
       setCantidad(Number(item.cantidad) ?? 0);
       setSelecciones(item.selecciones);
+      setExtras(item.extras ?? []);
     } else {
       setCantidad(0);
       setSelecciones(initSelecciones());
+      setExtras([]);
     }
   }, [carrito]);
 
@@ -83,8 +86,8 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
     setOpen(false);
   };
 
-  const confirmarAgregar = ({ cantidad: nuevaCantidad, selecciones: nuevasSelecciones }) => {
-    agregarPromoAlCarrito(promo, { cantidad: nuevaCantidad, selecciones: nuevasSelecciones }, key);
+  const confirmarAgregar = ({ cantidad: nuevaCantidad, selecciones: nuevasSelecciones, extras: nuevosExtras }) => {
+    agregarPromoAlCarrito(promo, { cantidad: nuevaCantidad, selecciones: nuevasSelecciones, extras: nuevosExtras }, key);
     setSnapshot(null);
     setOpen(false);
   };
@@ -252,7 +255,7 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
         <PopoverPromo
           promo={promo}
           data={data}
-          initialQuantities={{ cantidad, selecciones }}
+          initialQuantities={{ cantidad, selecciones, extras }}
           onClose={cerrarSinGuardar}
           onAgregar={confirmarAgregar}
           getStockDisponible={(variantId) => getStockDisponible(variantId, key)}
