@@ -282,7 +282,9 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
           <span className="text-[18px] text-center font-['koulen'] text-white/70">(PRECIO DE ENVIO A ACORDAR)</span>
           {discount && (
             <div className="text-green-400 font-['prompt'] text-center">
-              ✅ {discount.code} — {discount.discount_type === 'percentage'
+              ✅ {discount.code} — {discount.code.toUpperCase().startsWith('ENVIO')
+                ? 'ENVÍO GRATIS'
+                : discount.discount_type === 'percentage'
                 ? `${discount.discount_value}% de descuento (no aplica a promociones)`
                 : `$${discount.discount_value.toLocaleString('es-AR')} de descuento (no aplica a promociones)`}
             </div>

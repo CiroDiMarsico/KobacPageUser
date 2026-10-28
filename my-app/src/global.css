@@ -68,3 +68,37 @@ html, body {
 .animate-shimmer {
   animation: shimmer 2.5s ease-in-out infinite;
 }
+
+/* ruleta: cartel de premio */
+@keyframes neon {
+  0%, 100% {
+    text-shadow: 0 0 4px #fff, 0 0 12px #FF6600, 0 0 24px #FF6600, 0 0 44px #C32CFF;
+  }
+  50% {
+    text-shadow: 0 0 2px #fff, 0 0 8px #C32CFF, 0 0 18px #C32CFF, 0 0 36px #FF6600;
+  }
+}
+
+.animate-neon {
+  animation: neon 1.4s ease-in-out infinite;
+}
+
+@keyframes premio-pop {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-6deg); }
+  60%  { opacity: 1; transform: scale(1.12) rotate(2deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.animate-premio-pop {
+  animation: premio-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* lamparitas: el color del brillo sale de currentColor */
+@keyframes luz {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px 2px currentColor; }
+  50%      { opacity: 0.25; box-shadow: none; }
+}
+
+.animate-luz {
+  animation: luz 0.7s steps(1, end) infinite;
+}
