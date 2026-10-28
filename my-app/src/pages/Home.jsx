@@ -235,8 +235,8 @@ const Home = () => {
 
       {/*categories buttons*/}
       <div className="flex justify-center items-center h-[120px] gap-[3vw]">
-
-        <button
+        {/*
+          <button
           className={`rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px]`}
           onClick={() => { setShow("promos") }}
           style={{
@@ -266,6 +266,75 @@ const Home = () => {
         >
           💨V-SHOP
         </button>
+        */}
+
+        <>
+          {/* Botón PROMOS */}
+          <button
+            className="rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px] relative overflow-hidden transition-all duration-200"
+            onClick={() => { setShow("promos") }}
+            style={{
+              backgroundColor: show === "promos" ? "#C32CFF" : "#1E1E1E",
+              color: show === "promos" ? "#ffffff" : "#C32CFF",
+            }}
+          >
+            {/* SVG de Sangre Chorreando */}
+            <svg
+              className="absolute top-0 left-0 w-full h-[22px] pointer-events-none opacity-85 text-[#800000] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+              viewBox="0 0 120 25"
+              fill="currentColor"
+              preserveAspectRatio="none"
+            >
+              <path d="M0,0 L120,0 L120,4 C112,4 108,16 102,16 C96,16 94,3 86,3 C80,3 76,22 70,22 C64,22 62,5 54,5 C48,5 44,14 38,14 C32,14 30,3 22,3 C16,3 12,18 6,18 C3,18 1,4 0,4 Z" />
+            </svg>
+
+            <span className="relative z-10">PROMOS</span>
+          </button>
+
+          {/* Botón BEBIDAS */}
+          <button
+            className="rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px] relative overflow-hidden transition-all duration-200"
+            onClick={() => { setShow("bebidas") }}
+            style={{
+              backgroundColor: show === "bebidas" ? "#C32CFF" : "#1E1E1E",
+              color: show === "bebidas" ? "#ffffff" : "#C32CFF",
+            }}
+          >
+            {/* SVG de Sangre Chorreando */}
+            <svg
+              className="absolute top-0 left-0 w-full h-[22px] pointer-events-none opacity-85 text-[#800000] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+              viewBox="0 0 120 25"
+              fill="currentColor"
+              preserveAspectRatio="none"
+            >
+              <path d="M0,0 L120,0 L120,4 C112,4 108,16 102,16 C96,16 94,3 86,3 C80,3 76,22 70,22 C64,22 62,5 54,5 C48,5 44,14 38,14 C32,14 30,3 22,3 C16,3 12,18 6,18 C3,18 1,4 0,4 Z" />
+            </svg>
+
+            <span className="relative z-10">BEBIDAS</span>
+          </button>
+
+          {/* Botón V-SHOP */}
+          <button
+            className="rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px] relative overflow-hidden transition-all duration-200"
+            onClick={() => { setShow("vapes") }}
+            style={{
+              backgroundColor: show === "vapes" ? "#C32CFF" : "#1E1E1E",
+              color: show === "vapes" ? "#ffffff" : "#C32CFF",
+            }}
+          >
+            {/* SVG de Sangre Chorreando */}
+            <svg
+              className="absolute top-0 left-0 w-full h-[22px] pointer-events-none opacity-85 text-[#800000] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+              viewBox="0 0 120 25"
+              fill="currentColor"
+              preserveAspectRatio="none"
+            >
+              <path d="M0,0 L120,0 L120,4 C112,4 108,16 102,16 C96,16 94,3 86,3 C80,3 76,22 70,22 C64,22 62,5 54,5 C48,5 44,14 38,14 C32,14 30,3 22,3 C16,3 12,18 6,18 C3,18 1,4 0,4 Z" />
+            </svg>
+
+            <span className="relative z-10">💨V-SHOP</span>
+          </button>
+        </>
       </div>
 
       {/*search*/}
