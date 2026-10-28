@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import api from '../api/axios'
 import ubiIcon from '/assets/ubi.webp'
+import { calcDescuentoVapes, PORCENTAJE_DESCUENTO_VAPES } from '../utils/descuentoVapes'
 
 const Confirm = () => {
 
@@ -57,7 +58,12 @@ const Confirm = () => {
     return acc + item.precio * item.cantidad
   }, 0)
 
-  const subtotalProductos = calcSubtotalProductos(carrito)
+  // 25% off en las unidades pares, solo en vapes. El backend lo recalcula igual.
+  const calcDescuentoVapesRubro = (c) => rubro === 'vapes' ? calcDescuentoVapes(c) : { total: 0, porProducto: {} }
+
+  const descuentoVapes = calcDescuentoVapesRubro(carrito)
+  // El cupón se calcula sobre los productos ya con el descuento de vapes aplicado
+  const subtotalProductos = calcSubtotalProductos(carrito) - descuentoVapes.total
   const subtotalPromos = calcSubtotalPromos(carrito)
 
   const discountAmountRaw = discount
@@ -119,7 +125,7 @@ const Confirm = () => {
       .filter(Boolean)
   }
 
-  const armarMensaje = (carritoActual, totalActual, subtotalActual, saleId) => {
+  const armarMensaje = (carritoActual, totalActual, subtotalActual, saleId, descuentoVapesActual) => {
     const itemsTexto = carritoActual
       .filter(item => !item.isPromo && item.variants)
       .map(item => {
@@ -132,7 +138,11 @@ const Confirm = () => {
           })
           .join('\n')
         const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0)
-        return `*${item.nombre}* - $${(item.precio * cantTotal).toLocaleString('es-AR')}\n${variantes}`
+        const descuentoItem = descuentoVapesActual.porProducto[item.idProduct]
+        const lineaDescuento = descuentoItem
+          ? `\n  🔥 ${descuentoItem.unidades} u. con ${PORCENTAJE_DESCUENTO_VAPES}% off: -$${descuentoItem.monto.toLocaleString('es-AR')}`
+          : ''
+        return `*${item.nombre}* - $${(item.precio * cantTotal - (descuentoItem?.monto ?? 0)).toLocaleString('es-AR')}\n${variantes}${lineaDescuento}`
       }).join('\n\n')
 
     const promosTexto = carritoActual
@@ -161,16 +171,18 @@ const Confirm = () => {
 
 ${rubro === 'bebidas' ? '🍾' : '💨'} *PRODUCTOS:*
 ${itemsTexto ? `\n${itemsTexto}\n` : ''}${promosTexto ? `\n🎁 *PROMOS:*\n\n${promosTexto}\n` : ''}
-${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocaleString('es-AR')}\n` : ''}💰 *SUBTOTAL:* $${subtotalActual.toLocaleString('es-AR')}
+${descuentoVapesActual.total > 0 ? `🔥 *2da unidad ${PORCENTAJE_DESCUENTO_VAPES}% off:* -$${descuentoVapesActual.total.toLocaleString('es-AR')}\n` : ''}${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocaleString('es-AR')}\n` : ''}💰 *SUBTOTAL:* $${subtotalActual.toLocaleString('es-AR')}
 💰 *TOTAL:* $${totalActual.toLocaleString('es-AR')} + envío
 💳 *Pago:* ${show.toUpperCase()}
 `.trim()
   }
 
   const procesarVenta = async (carritoActual) => {
-    const subtotalProductosActual = calcSubtotalProductos(carritoActual)
+    const descuentoVapesActual = calcDescuentoVapesRubro(carritoActual)
+    const subtotalProductosActual = calcSubtotalProductos(carritoActual) - descuentoVapesActual.total
     const subtotalPromosActual = calcSubtotalPromos(carritoActual)
-    const subtotalActual = subtotalProductosActual + subtotalPromosActual
+    // Subtotal sin descuentos, como antes: los descuentos van en líneas aparte del mensaje
+    const subtotalActual = subtotalProductosActual + descuentoVapesActual.total + subtotalPromosActual
 
     const discountAmountRawActual = discount
       ? discount.discount_type === 'percentage'
@@ -199,7 +211,7 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
       total: totalActual
     })
     const saleId = res.data.saleId
-    const mensaje = armarMensaje(carritoActual, totalActual, subtotalActual, saleId)
+    const mensaje = armarMensaje(carritoActual, totalActual, subtotalActual, saleId, descuentoVapesActual)
 
     const url = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensaje)}`
 
@@ -280,6 +292,18 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
             </div>
           </div>
           <span className="text-[18px] text-center font-['koulen'] text-white/70">(PRECIO DE ENVIO A ACORDAR)</span>
+          {descuentoVapes.total > 0 && (
+            <div className="flex flex-col items-center gap-1 mt-2 font-['koulen'] text-[#C32CFF]">
+              <span className="text-[20px]">🔥 2DA UNIDAD {PORCENTAJE_DESCUENTO_VAPES}% OFF: -${descuentoVapes.total.toLocaleString("es-AR")}</span>
+              {carrito
+                .filter(item => descuentoVapes.porProducto[item.idProduct])
+                .map(item => (
+                  <span key={item.idProduct} className="text-[16px] text-white/70">
+                    {item.nombre}: {descuentoVapes.porProducto[item.idProduct].unidades} u. con {PORCENTAJE_DESCUENTO_VAPES}% off (-${descuentoVapes.porProducto[item.idProduct].monto.toLocaleString("es-AR")})
+                  </span>
+                ))}
+            </div>
+          )}
           {discount && (
             <div className="text-green-400 font-['prompt'] text-center">
               ✅ {discount.code} — {discount.code.toUpperCase().startsWith('ENVIO')
@@ -302,7 +326,10 @@ ${discount ? `🏷️ *Descuento (${discount.code}):* -$${discountAmount.toLocal
               <Button text="AMBOS" width="200px" height="50px" click={() => { setShow("ambos") }} color={show == "ambos" ? "#C32CFF" : "#1E1E1E"} textColor={show == "ambos" ? "#ffffff" : "#C32CFF"} />
             </div>
           </div>
-          <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100 bg-[#6F3784] w-[300px] rounded-xl h-[30px] flex items-center justify-center">¿Tienes un cupon de descuento?</a>
+          {/* En vapes no se usan cupones: ya tienen el 25% off en la 2da unidad */}
+          {rubro !== 'vapes' && (
+            <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100 bg-[#6F3784] w-[300px] rounded-xl h-[30px] flex items-center justify-center">¿Tienes un cupon de descuento?</a>
+          )}
         </div>
 
         <hr className="w-[90%] mx-auto mt-6" />

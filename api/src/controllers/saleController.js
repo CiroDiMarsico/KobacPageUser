@@ -3,6 +3,11 @@ const saleModel = require('../models/saleModel')
 const discountModel = require('../models/discountModel')
 const pool = require('../db/connection')
 
+// Vapes: 25% off en cada unidad par (2da, 4ta...), contando todas las unidades de
+// vapes del carrito juntas en el orden en que vienen. Tiene que coincidir con
+// my-app/src/utils/descuentoVapes.js.
+const PORCENTAJE_DESCUENTO_VAPES = 25
+
 const create = async (req, res) => {
     const conn = await pool.getConnection()
     try {
@@ -18,6 +23,8 @@ const create = async (req, res) => {
         // Recalcular subtotal en el servidor desde la base de datos
         let subtotalProductos = 0
         let subtotalPromos = 0
+        let unidadesVapes = 0
+        let descuentoVapes = 0
         const items = []
 
         for (const item of carrito) {
@@ -46,13 +53,25 @@ const create = async (req, res) => {
                 for (const [variantId, quantity] of Object.entries(item.variants || {})) {
                     if (quantity > 0) {
                         const [[product]] = await conn.query(
-                            `SELECT p.sale_price FROM products p
+                            `SELECT p.sale_price,
+                            (LOWER(c.name) = 'vapes' OR LOWER(root.name) = 'vapes') AS is_vape
+                     FROM products p
                      JOIN variants v ON v.product_id = p.id
+                     LEFT JOIN categories c ON c.id = p.category_id
+                     LEFT JOIN categories root ON root.id = c.parent_id
                      WHERE v.id = ?`,
                             [variantId]
                         )
                         const unitPrice = product ? Number(product.sale_price) : 0
                         subtotalProductos += unitPrice * Number(quantity)  // SÍ entra al subtotal con descuento
+
+                        if (product?.is_vape) {
+                            const descuentoUnidad = Math.round(unitPrice * PORCENTAJE_DESCUENTO_VAPES / 100)
+                            for (let i = 0; i < Number(quantity); i++) {
+                                unidadesVapes++
+                                if (unidadesVapes % 2 === 0) descuentoVapes += descuentoUnidad
+                            }
+                        }
                         items.push({
                             variantId: Number(variantId),
                             promoId: null,
@@ -63,6 +82,9 @@ const create = async (req, res) => {
                 }
             }
         }
+
+        // El descuento de vapes queda dentro del total (no en discount_amount, que es del cupón)
+        subtotalProductos -= descuentoVapes
 
         // Validar código de descuento — se calcula SOLO sobre subtotalProductos
         let discountCodeId = null

@@ -7,17 +7,21 @@ import carritoVacio from "/assets/carritoVacio.webp";
 import carritoMedio from "/assets/carritoMedio.webp";
 import carritoLleno from "/assets/carritoLleno.webp";
 import carritoRelleno from "/assets/carritoRelleno.webp";
+import { calcDescuentoVapes, PORCENTAJE_DESCUENTO_VAPES } from "../utils/descuentoVapes";
 
 const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoAlCarrito, getStockDisponible, rubro = "bebidas" }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+
+  // 25% off en las unidades pares, solo en vapes
+  const descuentoVapes = rubro === "vapes" ? calcDescuentoVapes(carrito) : { total: 0, porProducto: {} };
 
   const total = carrito.reduce((acc, item) => {
     if (item.isPromo) return acc + item.precio * item.cantidad;
     if (!item.variants) return acc;
     const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
     return acc + item.precio * cantTotal;
-  }, 0);
+  }, 0) - descuentoVapes.total;
 
   const totalVariantes = carrito.reduce((acc, item) => {
     if (item.isPromo) return acc + item.cantidad;
@@ -105,6 +109,7 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
             .map(item => {
               const cantTotal = Object.values(item.variants).reduce((a, b) => a + b, 0);
               const productoData = data.find(p => p.id === item.idProduct);
+              const descuentoItem = descuentoVapes.porProducto[item.idProduct];
               return (
                 <div
                   key={item.idProduct}
@@ -118,9 +123,16 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
                       </button>
                       <h2 className="font-['koulen'] text-[22px]">{item.nombre}</h2>
                     </div>
-                    <span className="font-['koulen'] text-[20px] text-[#00FF1E]">
-                      ${(item.precio * cantTotal).toLocaleString("es-AR")}
-                    </span>
+                    <div className="flex flex-col items-end leading-none">
+                      {descuentoItem && (
+                        <span className="font-['koulen'] text-[14px] text-white/50 line-through">
+                          ${(item.precio * cantTotal).toLocaleString("es-AR")}
+                        </span>
+                      )}
+                      <span className="font-['koulen'] text-[20px] text-[#00FF1E]">
+                        ${(item.precio * cantTotal - (descuentoItem?.monto ?? 0)).toLocaleString("es-AR")}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-1 pl-1">
                     {Object.entries(item.variants)
@@ -134,6 +146,17 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
                           <span className="font-['koulen'] text-[16px]">{cant}</span>
                         </div>
                       ))}
+                    {descuentoItem && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-['koulen'] text-[14px] text-[#C32CFF] uppercase tracking-wider">
+                          {descuentoItem.unidades} u. con {PORCENTAJE_DESCUENTO_VAPES}% off
+                        </span>
+                        <div className="flex-1 border-b border-[#C32CFF]/40" />
+                        <span className="font-['koulen'] text-[16px] text-[#C32CFF]">
+                          -${descuentoItem.monto.toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="border-b border-white/10 mt-3" />
                 </div>
@@ -191,6 +214,12 @@ const Cart = ({ carrito = [], data, promos = [], agregarAlCarrito, agregarPromoA
             <h4 className="font-[prompt] text-[10px] text-center text-white/80 pb-3">DIVIDI EL TOTAL</h4>
           </button>
           <div className="border-t border-white/20 mb-3" />
+          {descuentoVapes.total > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="font-['koulen'] text-[16px] tracking-wider text-[#C32CFF]">2DA UNIDAD {PORCENTAJE_DESCUENTO_VAPES}% OFF:</span>
+              <span className="font-['koulen'] text-[16px] text-[#C32CFF]">-${descuentoVapes.total.toLocaleString("es-AR")}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center">
             <span className="font-['koulen'] text-[26px] tracking-widest">TOTAL:</span>
             <span className="font-['koulen'] text-[26px] text-[#00FF1E]">${total.toLocaleString("es-AR")}</span>
