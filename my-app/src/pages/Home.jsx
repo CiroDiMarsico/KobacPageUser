@@ -201,7 +201,7 @@ const Home = () => {
       {/*marquee*/}
       <div className="relative w-full">
         {/* Contenedor principal con el fondo naranja Halloween */}
-        <div className="bg-[#FF6600] text-white h-[50px] flex items-center justify-center font-[koulen] text-[20px] relative z-10 shadow-lg">
+        <div className="bg-[#FF6600] text-white h-[50px] flex items-center justify-center font-[koulen] text-[20px] relative z-10 shadow-lg overflow-hidden">
           <div className="flex whitespace-nowrap animate-marquee">
             <div className="flex gap-[80px] px-[80px] md:gap-[300px] md:px-[300px]">
               {marquee.map((item, index) => (
