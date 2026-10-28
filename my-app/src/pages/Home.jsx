@@ -7,7 +7,7 @@ import Carousel from "../components/Carousel";
 import Loading from "../components/Loading";
 import ErrorCarga from "../components/ErrorCarga";
 import Cart from "../components/Cart";
-import grafittiKobac from "/assets/grafittiKobac.webp";
+import grafittiKobac from "/assets/grafittiKobac.png";
 import lupaIcon from "/assets/lupa.webp";
 import api from '../api/axios'
 import { useCarrito } from "../hooks/useCarrito"
