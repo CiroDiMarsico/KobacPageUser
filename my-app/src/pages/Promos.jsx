@@ -102,27 +102,115 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
   }, [open]);
 
   return (
-    <div className="w-[95%] bg-[#1E1E1E] rounded-3xl flex flex-col items-center justify-between p-4 font-['prompt'] gap-4 relative overflow-hidden" onClick={abrirPopover}>
+    <div className="w-[95%] bg-[#1E1E1E] border border-[#FF6600]/20 shadow-[0_2px_8px_rgba(255,102,0,0.08)] rounded-3xl flex flex-col items-center justify-between p-4 font-['prompt'] gap-4 relative overflow-hidden" onClick={abrirPopover}>
+
+    {/*
+      <div className="w-[95%] bg-[#1E1E1E] rounded-3xl flex flex-col items-center justify-between p-4 font-['prompt'] gap-4 relative overflow-hidden" onClick={abrirPopover}>
+
+
+        <img
+          src={promo.img}
+          alt={promo.name}
+          className="rounded-2xl w-full object-cover mask-b-from-90% mask-b-to-100%"
+        />
+        {promo.name.toLowerCase().includes("combo del finde") ? (
+          <span className="text-[17px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[42px] absolute right-[-50px] top-[10px] rotate-[35deg]">
+            <p>¡COMBO</p>
+            <p>DEL FINDE!</p>
+          </span>
+        ) : (
+          <span className="text-[17px] text-white line-through leading-none font-bold flex items-center justify-center bg-red-500/70 px-2 w-[180px] h-[42px] absolute right-[-50px] top-[10px] rotate-[35deg]">
+            ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(precioReal)}
+          </span>
+        )}
+
+        <div className="flex flex-col items-center gap-1 w-full flex-1">
+          <h1 className="font-bold text-[18px] leading-none text-center">{promo.name.toUpperCase().replace("DEL FINDE", "")}</h1>
+
+          <div className="flex flex-col items-center gap-0">
+            <h3 className="font-bold text-[20px] text-[#00FF1E]">
+              ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(promo.price)}
+            </h3>
+          </div>
+
+
+          <div className="w-full grid grid-cols-2 gap-2">
+            {promo.items.map(item => {
+              const producto = data.find(p => p.id === item.idProduct);
+              return (
+                <div key={item.idProduct} className="flex items-center justify-between px-2">
+                  <span className="font-['koulen'] text-[14px] text-white/60">
+                    {producto?.name ?? '—'}
+                  </span>
+                  <span className="font-['koulen'] text-[14px] text-[#C32CFF]">
+                    x{item.quantity}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+
+        <Button
+          text="AGREGAR"
+          width="130px"
+          height="36px"
+          color="#C32CFF"
+          textColor="#FFFFFF"
+          textSize="17px"
+        />
+
+        {open && (
+          <PopoverPromo
+            promo={promo}
+            data={data}
+            initialQuantities={{ cantidad, selecciones }}
+            onClose={cerrarSinGuardar}
+            onAgregar={confirmarAgregar}
+            getStockDisponible={(variantId) => getStockDisponible(variantId, key)}
+          />
+        )}
+      </div>
+        */}
+      {/* Tela de araña grande en la esquina inferior derecha */}
+      <svg className="absolute bottom-0 right-0 w-40 h-40 pointer-events-none opacity-20 text-[#FF6600] rotate-180" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
+        <line x1="0" y1="0" x2="100" y2="0" />
+        <line x1="0" y1="0" x2="0" y2="100" />
+        <line x1="0" y1="0" x2="85" y2="85" />
+        <line x1="0" y1="0" x2="100" y2="45" />
+        <line x1="0" y1="0" x2="45" y2="100" />
+        <line x1="0" y1="0" x2="95" y2="20" />
+        <line x1="0" y1="0" x2="20" y2="95" />
+        <path d="M 20 0 Q 15 15 0 20" />
+        <path d="M 40 0 Q 30 30 0 40" />
+        <path d="M 60 0 Q 45 45 0 60" />
+        <path d="M 80 0 Q 60 60 0 80" />
+        <path d="M 100 0 Q 75 75 0 100" />
+      </svg>
 
       {/* Imagen */}
       <img
         src={promo.img}
         alt={promo.name}
-        className="rounded-2xl w-full object-cover mask-b-from-90% mask-b-to-100%"
+        className="rounded-2xl w-full object-cover mask-b-from-90% mask-b-to-100% relative z-10"
       />
+
+      {/* Etiqueta con estilo Halloween manteniendo tipografía original */}
       {promo.name.toLowerCase().includes("combo del finde") ? (
-        <span className="text-[17px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[42px] absolute right-[-50px] top-[10px] rotate-[35deg]">
-          <p>¡COMBO</p>
-          <p>DEL FINDE!</p>
+        <span className="text-[17px] text-[#FFCC00] leading-none font-bold flex flex-col items-center justify-center bg-[#990000] border-y border-[#FF6600]/50 px-2 w-[180px] h-[42px] absolute right-[-50px] top-[10px] rotate-[35deg] shadow-md z-20">
+          <p className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">¡COMBO</p>
+          <p className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">DEL FINDE!</p>
         </span>
       ) : (
-        <span className="text-[17px] text-white line-through leading-none font-bold flex items-center justify-center bg-red-500/70 px-2 w-[180px] h-[42px] absolute right-[-50px] top-[10px] rotate-[35deg]">
-          ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(precioReal)}
+        <span className="text-[17px] text-[#FFCC00] line-through leading-none font-bold flex items-center justify-center bg-[#990000] border-y border-[#FF6600]/50 px-2 w-[180px] h-[42px] absolute right-[-50px] top-[10px] rotate-[35deg] shadow-md z-20">
+          <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(precioReal)}</span>
         </span>
       )}
+
       {/* Info */}
-      <div className="flex flex-col items-center gap-1 w-full flex-1">
-        <h1 className="font-bold text-[18px] leading-none text-center">{promo.name.toUpperCase().replace("DEL FINDE", "")}</h1>
+      <div className="flex flex-col items-center gap-1 w-full flex-1 relative z-10">
+        <h1 className="font-bold text-[18px] leading-none text-center text-white">{promo.name.toUpperCase().replace("DEL FINDE", "")}</h1>
 
         <div className="flex flex-col items-center gap-0">
           <h3 className="font-bold text-[20px] text-[#00FF1E]">
@@ -149,14 +237,16 @@ const PromoItem = ({ promo, data, carrito = [], agregarPromoAlCarrito, getStockD
       </div>
 
       {/* Botón */}
-      <Button
-        text="AGREGAR"
-        width="130px"
-        height="36px"
-        color="#C32CFF"
-        textColor="#FFFFFF"
-        textSize="17px"
-      />
+      <div className="relative z-10">
+        <Button
+          text="AGREGAR"
+          width="130px"
+          height="36px"
+          color="#C32CFF"
+          textColor="#FFFFFF"
+          textSize="17px"
+        />
+      </div>
 
       {open && (
         <PopoverPromo
