@@ -1,4 +1,6 @@
+const crypto = require('crypto')
 const discountModel = require('../models/discountModel')
+const ruletaModel = require('../models/ruletaModel')
 
 const validate = async (req, res) => {
     try {
@@ -63,10 +65,50 @@ const PREMIOS = {
 const VIGENCIA_DIAS = 7
 const ESPERA_MS = 12 * 60 * 60 * 1000
 
-// Ultimo giro por dispositivo ({ fecha, resultado }). En memoria: se pierde si
-// se reinicia la API, pero alcanza para frenar al que borra el localStorage y
-// vuelve a girar.
-const ultimoGiro = new Map()
+// ------------------------------
+// ¿Quien esta girando?
+// ------------------------------
+// El deviceId vive en el localStorage, y los navegadores internos de Instagram
+// y WhatsApp lo borran al cerrar el link: con eso solo, cerrar y volver a abrir
+// alcanzaba para girar de nuevo. Por eso tambien se guarda una huella de
+// IP + navegador, que sobrevive aunque se borre el storage.
+const IP_PRIVADA = /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|::1$|f[cd]|fe80)/i
+
+const getIp = (req) => {
+    const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    return (forwarded || req.socket?.remoteAddress || '').replace(/^::ffff:/, '')
+}
+
+// Si la IP es interna (la del proxy y no la del cliente) la huella seria la
+// misma para todos y bloquearia a cualquiera: en ese caso no se usa.
+const getHuella = (req) => {
+    const ip = getIp(req)
+    if (!ip || IP_PRIVADA.test(ip)) return null
+    const ua = String(req.headers['user-agent'] || '')
+    return crypto.createHash('sha256').update(`${ip}|${ua}`).digest('hex')
+}
+
+// Devuelve por que no puede girar ({ cupon } o { proximoGiro }), o null si puede.
+const getBloqueo = async ({ deviceId, huella, ahora }) => {
+    const giros = await ruletaModel.getGirosBloqueantes({
+        deviceId, huella, desde: new Date(ahora - ESPERA_MS),
+    })
+
+    // Mientras el cupon ganado siga sin usar no se puede volver a girar,
+    // aunque hayan pasado las 12hs. Se lo devolvemos para que lo vuelva a ver.
+    const conCupon = giros.find(g => g.cupon_activo)
+    if (conCupon) {
+        const { segmento, premio, code } = conCupon
+        return { cupon: { segmento, premio, code } }
+    }
+
+    const reciente = giros.find(g => new Date(g.created_at).getTime() > ahora - ESPERA_MS)
+    if (reciente) return { proximoGiro: new Date(reciente.created_at).getTime() + ESPERA_MS }
+
+    return null
+}
+
+const getDeviceId = (valor) => String(valor || '').slice(0, 64)
 
 // Sin 0/O/1/I para que no se confundan al copiarlo a mano.
 const CARACTERES = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -83,20 +125,30 @@ const sortearPremio = () => {
     return 'perdiste'
 }
 
+// El front pregunta esto al abrir la pagina para decidir si muestra la
+// ruleta, el cartel con el cupon sin usar, o nada.
+const spinStatus = async (req, res) => {
+    try {
+        const deviceId = getDeviceId(req.query.deviceId)
+        if (!deviceId) return res.status(400).json({ error: 'Falta deviceId' })
+        const bloqueo = await getBloqueo({ deviceId, huella: getHuella(req), ahora: Date.now() })
+        res.json({ puedeGirar: !bloqueo, ...bloqueo })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: 'Error al consultar la ruleta' })
+    }
+}
+
 const spin = async (req, res) => {
     try {
-        const deviceId = String(req.body?.deviceId || '').slice(0, 64)
+        const deviceId = getDeviceId(req.body?.deviceId)
         if (!deviceId) return res.status(400).json({ error: 'Falta deviceId' })
 
         const ahora = Date.now()
-        const anterior = ultimoGiro.get(deviceId)
-        // Mientras el cupon ganado siga sin usar no se puede volver a girar,
-        // aunque hayan pasado las 12hs. Se lo devolvemos para que lo vuelva a ver.
-        if (anterior?.resultado.code && await discountModel.validate(anterior.resultado.code)) {
-            return res.status(429).json({ error: 'Tenes un cupon sin usar', cupon: anterior.resultado })
-        }
-        if (anterior && ahora - anterior.fecha < ESPERA_MS) {
-            return res.status(429).json({ error: 'Ya giraste la ruleta', proximoGiro: anterior.fecha + ESPERA_MS })
+        const huella = getHuella(req)
+        const bloqueo = await getBloqueo({ deviceId, huella, ahora })
+        if (bloqueo) {
+            return res.status(429).json({ error: 'Ya giraste la ruleta', ...bloqueo })
         }
 
         const premio = sortearPremio()
@@ -116,13 +168,12 @@ const spin = async (req, res) => {
             if (!code) throw new Error('No se pudo generar un codigo unico')
         }
 
-        const resultado = { segmento, premio, code }
-        ultimoGiro.set(deviceId, { fecha: ahora, resultado })
-        res.json(resultado)
+        await ruletaModel.registrarGiro({ deviceId, huella, premio, segmento, code, fecha: new Date(ahora) })
+        res.json({ segmento, premio, code })
     } catch (error) {
         console.error(error)
         res.status(500).json({ error: 'Error al girar la ruleta' })
     }
 }
 
-module.exports = { validate, deactivate, spin }
+module.exports = { validate, deactivate, spin, spinStatus }

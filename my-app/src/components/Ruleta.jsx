@@ -102,24 +102,29 @@ const Ruleta = () => {
       }, DEMORA_APARICION);
     };
 
-    const cupon = leerCupon();
-    if (cupon?.code) {
-      api.get(`/discounts/validate/${encodeURIComponent(cupon.code)}`)
-        .then(() => {
-          if (cancelado) return;
-          setResultado(cupon);
+    // Ya giro hace menos de 12hs y no gano nada: ni hace falta preguntar.
+    if (!leerCupon() && !puedeGirar()) return;
+
+    // El que decide es el servidor: el localStorage se borra solo en los
+    // navegadores de Instagram/WhatsApp, asi que no alcanza con mirarlo.
+    api.get("/discounts/spin/status", { params: { deviceId: getDeviceId() } })
+      .then(({ data }) => {
+        if (cancelado) return;
+        if (data.cupon) {
+          guardar(KEY_CUPON, JSON.stringify(data.cupon));
+          setResultado(data.cupon);
           mostrar();
-        })
-        .catch(err => {
-          // Solo un 404 significa "ya se uso o vencio". Si fallo la red no
-          // mostramos nada, para no dejarlo girar con un cupon que quizas sigue activo.
-          if (cancelado || err.response?.status !== 404) return;
-          borrar(KEY_CUPON);
-          if (puedeGirar()) mostrar();
-        });
-    } else if (puedeGirar()) {
-      mostrar();
-    }
+          return;
+        }
+        borrar(KEY_CUPON);
+        if (data.puedeGirar) {
+          mostrar();
+        } else if (data.proximoGiro) {
+          guardar(KEY_ULTIMO_GIRO, String(data.proximoGiro - ESPERA_MS));
+        }
+      })
+      // Si falla la red no mostramos nada, para no dejarlo girar de mas.
+      .catch(() => {});
 
     return () => { cancelado = true; clearTimeout(t); };
   }, []);
