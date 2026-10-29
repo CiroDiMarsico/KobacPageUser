@@ -44,11 +44,11 @@ const SEGMENTOS = [
 
 // Probabilidad de cada premio (suman 100). El 100% no sale nunca.
 const PROBABILIDADES = {
-    perdiste: 40,
-    p5: 27.5,
-    p10: 14.5,
-    p15: 7.5,
-    envio: 10.5,
+    perdiste: 70,
+    p5: 13.75,
+    p10: 7.25,
+    p15: 3.75,
+    envio: 5.25,
     p100: 0,
 }
 
