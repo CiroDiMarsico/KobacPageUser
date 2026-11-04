@@ -7,7 +7,6 @@ import Carousel from "../components/Carousel";
 import Loading from "../components/Loading";
 import ErrorCarga from "../components/ErrorCarga";
 import Cart from "../components/Cart";
-import Ruleta from "../components/Ruleta";
 import grafittiKobac from "/assets/grafittiKobac.png";
 import lupaIcon from "/assets/lupa.webp";
 import api from '../api/axios'
@@ -362,8 +361,6 @@ const Home = () => {
       </div>
 
       <Cart carrito={carrito} data={data} promos={promos} agregarAlCarrito={agregarAlCarrito} agregarPromoAlCarrito={agregarPromoAlCarrito} getStockDisponible={getStockDisponible} />
-
-      <Ruleta />
 
     </main>
   );
