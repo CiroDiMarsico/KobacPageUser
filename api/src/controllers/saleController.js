@@ -2,6 +2,7 @@ const clientModel = require('../models/clientModel')
 const saleModel = require('../models/saleModel')
 const discountModel = require('../models/discountModel')
 const pool = require('../db/connection')
+const { notificarVenta } = require('./pushController')
 
 // Vapes: 25% off en cada unidad par (2da, 4ta...), contando todas las unidades de
 // vapes del carrito juntas en el orden en que vienen. Tiene que coincidir con
@@ -175,6 +176,9 @@ const create = async (req, res) => {
 
         await conn.commit()
         res.json({ ok: true, saleId })
+
+        // Avisar a los celulares con el admin instalado (sin esperar ni romper la venta)
+        notificarVenta(saleId)
 
     } catch (error) {
         await conn.rollback()

@@ -11,6 +11,7 @@ const clientesCtrl = require('../controllers/adminClientesController')
 const gastosCtrl = require('../controllers/adminGastosController')
 const cierreCtrl = require('../controllers/adminCierreController')
 const discountAdminCtrl = require('../controllers/adminDiscountController')
+const pushCtrl = require('../controllers/pushController')
 const createUpload = require('../middleware/upload')
 const { requireAuth } = require('../middleware/requireAuth')
 
@@ -86,5 +87,11 @@ router.get('/discounts',         discountAdminCtrl.getAll)
 router.post('/discounts',        discountAdminCtrl.create)
 router.patch('/discounts/:id',   discountAdminCtrl.toggle)
 router.delete('/discounts/:id',  discountAdminCtrl.remove)
+
+// ─── Notificaciones push ─────────────────────────────────────────────────────
+router.get('/push/public-key',   pushCtrl.getPublicKey)
+router.post('/push/subscribe',   pushCtrl.subscribe)
+router.post('/push/unsubscribe', pushCtrl.unsubscribe)
+router.post('/push/test',        pushCtrl.test)
 
 module.exports = router
