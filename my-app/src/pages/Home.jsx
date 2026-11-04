@@ -184,7 +184,6 @@ const Home = () => {
         <Carousel carousel={carousel} />
       </div>
 
-      {/*
       <div className="bg-[#4E486E] h-[50px] overflow-hidden flex items-center justify-center font-[koulen] text-[20px]">
         <div className="flex whitespace-nowrap animate-marquee">
           <div className="flex gap-[80px] px-[80px] md:gap-[300px] md:px-[300px]">
@@ -200,46 +199,10 @@ const Home = () => {
           </div>
         </div>
       </div>
-      */}
 
-      {/*marquee*/}
-      <div className="relative w-full">
-        {/* Contenedor principal con el fondo naranja Halloween */}
-        <div className="bg-[#FF6600] text-white h-[50px] flex items-center justify-center font-[koulen] text-[20px] relative z-10 shadow-lg overflow-hidden">
-          <div className="flex whitespace-nowrap animate-marquee">
-            <div className="flex gap-[80px] px-[80px] md:gap-[300px] md:px-[300px]">
-              {marquee.map((item, index) => (
-                <span key={index} className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
-                  {item.text}
-                </span>
-              ))}
-            </div>
-
-            <div className="flex gap-[80px] md:gap-[300px]">
-              {marquee.map((item, index) => (
-                <span key={index} className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
-                  {item.text}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* SVG de gotas derretidas en la parte inferior */}
-        <div className="absolute top-[100%] left-0 w-full overflow-hidden leading-none z-20 pointer-events-none">
-          <svg
-            viewBox="0 0 1200 120"
-            preserveAspectRatio="none"
-            className="relative block w-full h-[20px] fill-[#FF6600]"
-          >
-            <path d="M0,0 L1200,0 L1200,10 C1180,10 1175,45 1160,45 C1145,45 1140,10 1120,10 C1090,10 1085,75 1060,75 C1035,75 1030,15 1000,15 C970,15 965,55 940,55 C915,55 910,10 880,10 C850,10 845,90 820,90 C795,90 790,20 760,20 C730,20 725,60 700,60 C675,60 670,10 640,10 C610,10 605,80 580,80 C555,80 550,15 520,15 C490,15 485,50 460,50 C435,50 430,10 400,10 C370,10 365,85 340,85 C315,85 310,20 280,20 C250,20 245,65 220,65 C195,65 190,10 160,10 C130,10 125,95 100,95 C75,95 70,15 40,15 C20,15 10,5 0,0 Z"></path>
-          </svg>
-        </div>
-      </div>
 
       {/*categories buttons*/}
       <div className="flex justify-center items-center h-[120px] gap-[3vw]">
-        {/*
           <button
           className={`rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px]`}
           onClick={() => { setShow("promos") }}
@@ -270,75 +233,6 @@ const Home = () => {
         >
           💨V-SHOP
         </button>
-        */}
-
-        <>
-          {/* Botón PROMOS */}
-          <button
-            className="rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px] relative overflow-hidden transition-all duration-200"
-            onClick={() => { setShow("promos") }}
-            style={{
-              backgroundColor: show === "promos" ? "#C32CFF" : "#1E1E1E",
-              color: show === "promos" ? "#ffffff" : "#C32CFF",
-            }}
-          >
-            {/* SVG de Sangre Chorreando */}
-            <svg
-              className="absolute top-0 left-0 w-full h-[22px] pointer-events-none opacity-85 text-[#800000] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
-              viewBox="0 0 120 25"
-              fill="currentColor"
-              preserveAspectRatio="none"
-            >
-              <path d="M0,0 L120,0 L120,4 C112,4 108,16 102,16 C96,16 94,3 86,3 C80,3 76,22 70,22 C64,22 62,5 54,5 C48,5 44,14 38,14 C32,14 30,3 22,3 C16,3 12,18 6,18 C3,18 1,4 0,4 Z" />
-            </svg>
-
-            <span className="relative z-10">PROMOS</span>
-          </button>
-
-          {/* Botón BEBIDAS */}
-          <button
-            className="rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px] relative overflow-hidden transition-all duration-200"
-            onClick={() => { setShow("bebidas") }}
-            style={{
-              backgroundColor: show === "bebidas" ? "#C32CFF" : "#1E1E1E",
-              color: show === "bebidas" ? "#ffffff" : "#C32CFF",
-            }}
-          >
-            {/* SVG de Sangre Chorreando */}
-            <svg
-              className="absolute top-0 left-0 w-full h-[22px] pointer-events-none opacity-85 text-[#800000] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
-              viewBox="0 0 120 25"
-              fill="currentColor"
-              preserveAspectRatio="none"
-            >
-              <path d="M0,0 L120,0 L120,4 C112,4 108,16 102,16 C96,16 94,3 86,3 C80,3 76,22 70,22 C64,22 62,5 54,5 C48,5 44,14 38,14 C32,14 30,3 22,3 C16,3 12,18 6,18 C3,18 1,4 0,4 Z" />
-            </svg>
-
-            <span className="relative z-10">BEBIDAS</span>
-          </button>
-
-          {/* Botón V-SHOP */}
-          <button
-            className="rounded-3xl font-['Prompt'] font-bold text-[20px] w-[125px] h-[50px] max-[400px]:w-[110px] max-[400px]:text-[18px] relative overflow-hidden transition-all duration-200"
-            onClick={() => { setShow("vapes") }}
-            style={{
-              backgroundColor: show === "vapes" ? "#C32CFF" : "#1E1E1E",
-              color: show === "vapes" ? "#ffffff" : "#C32CFF",
-            }}
-          >
-            {/* SVG de Sangre Chorreando */}
-            <svg
-              className="absolute top-0 left-0 w-full h-[22px] pointer-events-none opacity-85 text-[#800000] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
-              viewBox="0 0 120 25"
-              fill="currentColor"
-              preserveAspectRatio="none"
-            >
-              <path d="M0,0 L120,0 L120,4 C112,4 108,16 102,16 C96,16 94,3 86,3 C80,3 76,22 70,22 C64,22 62,5 54,5 C48,5 44,14 38,14 C32,14 30,3 22,3 C16,3 12,18 6,18 C3,18 1,4 0,4 Z" />
-            </svg>
-
-            <span className="relative z-10">💨V-SHOP</span>
-          </button>
-        </>
       </div>
 
       {/*search*/}
