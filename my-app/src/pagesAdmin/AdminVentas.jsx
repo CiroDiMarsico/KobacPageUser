@@ -31,8 +31,8 @@ const STATUS_LABELS = {
 
 const NEXT_STATUS = {
     pending: ["paid", "shipping", "delivered", "cancelled"],
-    paid: ["shipping", "delivered", "cancelled"],
-    shipping: ["delivered", "cancelled"],
+    paid: ["pending", "shipping", "delivered", "cancelled"],
+    shipping: ["pending", "delivered", "cancelled"],
 }
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
@@ -661,9 +661,268 @@ const NuevaVentaModal = ({ rubro, products, onClose, onSaved }) => {
 }
 
 // ─── Card venta en proceso ────────────────────────────────────────────────────
-const SaleCard = ({ sale, onRefresh }) => {
+// ─── Modal editar productos de una venta en proceso ──────────────────────────
+// Productos sueltos: cambiar cantidad, quitar o agregar. Promos: se quitan o
+// agregan completas. El total se ajusta por la diferencia (en el servidor).
+const Stepper = ({ value, onChange, min = 0, max = Infinity }) => (
+    <div className="flex items-center gap-1 shrink-0">
+        <button onClick={() => onChange(Math.max(min, value - 1))} disabled={value <= min}
+            className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 font-['koulen'] text-[16px] disabled:opacity-30">−</button>
+        <span className="w-7 text-center font-['koulen'] text-[16px]">{value}</span>
+        <button onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max}
+            className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 font-['koulen'] text-[16px] disabled:opacity-30">+</button>
+    </div>
+)
+
+// Arma una promo nueva: por cada producto de la promo, elegir variantes hasta
+// completar la cantidad que pide.
+const ArmarPromo = ({ promo, products, onAgregar, onCancelar }) => {
+    const [elegidas, setElegidas] = useState({}) // variantId → cantidad
+
+    const grupos = promo.items.filter(i => i.idProduct).map(req => {
+        const producto = products.find(p => p.id === req.idProduct)
+        const variantes = (producto?.variants ?? []).filter(v => v.isActive && v.stock > 0)
+        const elegido = variantes.reduce((a, v) => a + (elegidas[v.id] || 0), 0)
+        return { req, producto, variantes, elegido }
+    })
+    const completa = grupos.length > 0 && grupos.every(g => g.elegido === g.req.quantity)
+
+    const agregar = () => onAgregar({
+        promoId: promo.id, name: promo.name, price: Number(promo.price),
+        variants: Object.entries(elegidas).filter(([, q]) => q > 0)
+            .map(([variantId, quantity]) => {
+                const g = grupos.find(g => g.variantes.some(v => v.id === Number(variantId)))
+                const v = g.variantes.find(v => v.id === Number(variantId))
+                return { variantId: Number(variantId), quantity, label: `${g.producto.name} — ${v.name}` }
+            }),
+    })
+
+    return (
+        <div className="flex flex-col gap-3 bg-white/[0.03] border border-[#C32CFF]/30 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+                <span className="font-['koulen'] text-[16px]">🎁 {promo.name}</span>
+                <span className="font-['koulen'] text-[15px] text-[#00FF1E]">{fmt(promo.price)}</span>
+            </div>
+            {grupos.length === 0 && <p className="font-['koulen'] text-[13px] text-red-400">Esta promo no tiene productos cargados</p>}
+            {grupos.map(({ req, producto, variantes, elegido }) => (
+                <div key={req.idProduct} className="flex flex-col gap-1">
+                    <span className={`font-['koulen'] text-[13px] ${elegido === req.quantity ? "text-green-400" : "text-white/50"}`}>
+                        {(producto?.name ?? "Producto").toUpperCase()} — ELEGÍ {req.quantity} ({elegido}/{req.quantity})
+                    </span>
+                    {variantes.length === 0 && <span className="font-['koulen'] text-[12px] text-red-400">Sin stock</span>}
+                    {variantes.map(v => (
+                        <div key={v.id} className="flex items-center justify-between pl-2">
+                            <span className="font-['koulen'] text-[14px] text-white/70 truncate">{v.name} <span className="text-white/30">({v.stock}u)</span></span>
+                            <Stepper value={elegidas[v.id] || 0}
+                                max={Math.min(v.stock, (elegidas[v.id] || 0) + req.quantity - elegido)}
+                                onChange={q => setElegidas(e => ({ ...e, [v.id]: q }))} />
+                        </div>
+                    ))}
+                </div>
+            ))}
+            <div className="flex gap-2 justify-end">
+                <Btn small color="ghost" onClick={onCancelar}>CANCELAR</Btn>
+                <Btn small onClick={agregar} disabled={!completa}>AGREGAR PROMO</Btn>
+            </div>
+        </div>
+    )
+}
+
+const EditarProductosModal = ({ sale, rubro, products, onClose, onSaved }) => {
+    const sueltos = sale.items.filter(i => !i.promoId)
+    const promosVenta = Object.values(sale.items.filter(i => i.promoId).reduce((acc, i) => {
+        acc[i.promoId] ??= { promoId: i.promoId, name: i.promoName, items: [] }
+        acc[i.promoId].items.push(i)
+        return acc
+    }, {}))
+
+    const [cantidades, setCantidades] = useState(() => Object.fromEntries(sueltos.map(i => [i.id, i.quantity])))
+    const [promosQuitadas, setPromosQuitadas] = useState(() => new Set())
+    const [nuevos, setNuevos] = useState([])           // { variantId, label, quantity, unitPrice }
+    const [promosNuevas, setPromosNuevas] = useState([]) // { promoId, name, price, variants }
+    const [promos, setPromos] = useState([])
+    const [variante, setVariante] = useState(null)
+    const [cantNueva, setCantNueva] = useState(1)
+    const [promoArmando, setPromoArmando] = useState(null)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
+
+    useEffect(() => {
+        api.get(`/promos?rubro=${rubro}`).then(r => setPromos(r.data)).catch(() => setPromos([]))
+    }, [rubro])
+
+    const stockDe = (variantId) =>
+        products.flatMap(p => p.variants).find(v => v.id === variantId)?.stock ?? 0
+    const precioDe = (variantId) => {
+        const p = products.find(p => p.variants.some(v => v.id === variantId))
+        return p ? (p.finalPrice ?? p.salePrice) : 0
+    }
+
+    // Cuántas veces está la promo en la venta (para estimar cuánto se descuenta al quitarla)
+    const vecesPromo = (grupo) => {
+        const def = promos.find(p => p.id === grupo.promoId)
+        const porPromo = def?.items.reduce((a, i) => a + (i.quantity || 0), 0) || 0
+        const unidades = grupo.items.reduce((a, i) => a + i.quantity, 0)
+        return porPromo > 0 ? Math.max(1, Math.round(unidades / porPromo)) : 1
+    }
+
+    const delta =
+        sueltos.reduce((a, i) => a + (cantidades[i.id] - i.quantity) * i.unitPrice, 0)
+        - promosVenta.filter(g => promosQuitadas.has(g.promoId))
+            .reduce((a, g) => a + Number(promos.find(p => p.id === g.promoId)?.price ?? 0) * vecesPromo(g), 0)
+        + nuevos.reduce((a, n) => a + n.quantity * n.unitPrice, 0)
+        + promosNuevas.reduce((a, p) => a + p.price, 0)
+
+    const hayCambios = sueltos.some(i => cantidades[i.id] !== i.quantity)
+        || promosQuitadas.size > 0 || nuevos.length > 0 || promosNuevas.length > 0
+
+    const agregarProducto = () => {
+        if (!variante) return
+        setNuevos(n => [...n, {
+            variantId: variante.variantId, label: variante.label,
+            quantity: cantNueva, unitPrice: precioDe(variante.variantId),
+        }])
+        setVariante(null); setCantNueva(1)
+    }
+
+    const togglePromo = (promoId) => setPromosQuitadas(prev => {
+        const s = new Set(prev)
+        if (s.has(promoId)) s.delete(promoId)
+        else s.add(promoId)
+        return s
+    })
+
+    const guardar = async () => {
+        setLoading(true); setError("")
+        try {
+            const r = await api.put(`/admin/sales/${sale.id}/items`, {
+                quantities: Object.fromEntries(sueltos.filter(i => cantidades[i.id] !== i.quantity).map(i => [i.id, cantidades[i.id]])),
+                removePromos: [...promosQuitadas],
+                addItems: nuevos.map(({ variantId, quantity, unitPrice }) => ({ variantId, quantity, unitPrice })),
+                addPromos: promosNuevas.map(p => ({ promoId: p.promoId, variants: p.variants.map(({ variantId, quantity }) => ({ variantId, quantity })) })),
+            }, authHeaders())
+            if (r.data.pagoMixto) alert("La venta tiene pago mixto: revisá los montos desde EDITAR.")
+            onSaved()
+        } catch (e) {
+            setError(e.response?.data?.error || "Error al guardar")
+        } finally { setLoading(false) }
+    }
+
+    const fila = "flex items-center justify-between gap-3 px-4 py-2.5 bg-white/[0.03] rounded-xl"
+
+    return (
+        <Modal title={`PRODUCTOS — VENTA #${sale.id}`} onClose={onClose} wide>
+            <div className="flex flex-col gap-2">
+                <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">PRODUCTOS</label>
+                {sueltos.length === 0 && nuevos.length === 0 && (
+                    <p className="font-['koulen'] text-[13px] text-white/30">Sin productos sueltos</p>
+                )}
+                {sueltos.map(i => {
+                    const q = cantidades[i.id]
+                    return (
+                        <div key={i.id} className={`${fila} ${q === 0 ? "opacity-40" : ""}`}>
+                            <div className="flex flex-col min-w-0">
+                                <span className={`font-['koulen'] text-[14px] truncate ${q === 0 ? "line-through" : ""}`}>{i.productName} — {i.variantName}</span>
+                                <span className="font-['koulen'] text-[12px] text-white/40">{fmt(i.unitPrice)} c/u</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Stepper value={q} max={i.quantity + stockDe(i.variantId)}
+                                    onChange={v => setCantidades(c => ({ ...c, [i.id]: v }))} />
+                                {q === 0
+                                    ? <Btn small color="ghost" onClick={() => setCantidades(c => ({ ...c, [i.id]: i.quantity }))}>DESHACER</Btn>
+                                    : <button onClick={() => setCantidades(c => ({ ...c, [i.id]: 0 }))} className="text-red-400 hover:text-red-300 font-['koulen'] text-[16px] px-1">✕</button>}
+                            </div>
+                        </div>
+                    )
+                })}
+                {nuevos.map((n, idx) => (
+                    <div key={`n${idx}`} className={`${fila} border border-green-500/20`}>
+                        <div className="flex flex-col min-w-0">
+                            <span className="font-['koulen'] text-[14px] truncate">➕ {n.label}</span>
+                            <span className="font-['koulen'] text-[12px] text-white/40">{fmt(n.unitPrice)} c/u</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Stepper value={n.quantity} min={1} max={stockDe(n.variantId)}
+                                onChange={v => setNuevos(arr => arr.map((x, j) => j === idx ? { ...x, quantity: v } : x))} />
+                            <button onClick={() => setNuevos(arr => arr.filter((_, j) => j !== idx))} className="text-red-400 hover:text-red-300 font-['koulen'] text-[16px] px-1">✕</button>
+                        </div>
+                    </div>
+                ))}
+                <div className="flex items-center gap-2">
+                    <VariantSearch products={products} value={variante?.variantId} onChange={setVariante} placeholder="Agregar producto..." />
+                    {variante && <Stepper value={cantNueva} min={1} max={variante.stock} onChange={setCantNueva} />}
+                    <Btn small onClick={agregarProducto} disabled={!variante}>AGREGAR</Btn>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">PROMOS (VAN COMPLETAS)</label>
+                {promosVenta.map(g => {
+                    const quitada = promosQuitadas.has(g.promoId)
+                    return (
+                        <div key={g.promoId} className={`${fila} ${quitada ? "opacity-40" : ""}`}>
+                            <div className="flex flex-col min-w-0">
+                                <span className={`font-['koulen'] text-[14px] ${quitada ? "line-through" : ""}`}>🎁 {g.name}</span>
+                                {g.items.map(i => (
+                                    <span key={i.id} className="font-['koulen'] text-[12px] text-white/40 truncate">
+                                        {i.productName} — {i.variantName} x{i.quantity}
+                                    </span>
+                                ))}
+                            </div>
+                            <Btn small color={quitada ? "ghost" : "red"} onClick={() => togglePromo(g.promoId)}>
+                                {quitada ? "DESHACER" : "QUITAR PROMO"}
+                            </Btn>
+                        </div>
+                    )
+                })}
+                {promosNuevas.map((p, idx) => (
+                    <div key={`p${idx}`} className={`${fila} border border-green-500/20`}>
+                        <div className="flex flex-col min-w-0">
+                            <span className="font-['koulen'] text-[14px]">➕ 🎁 {p.name} <span className="text-[#00FF1E]">{fmt(p.price)}</span></span>
+                            {p.variants.map(v => (
+                                <span key={v.variantId} className="font-['koulen'] text-[12px] text-white/40 truncate">{v.label} x{v.quantity}</span>
+                            ))}
+                        </div>
+                        <button onClick={() => setPromosNuevas(arr => arr.filter((_, j) => j !== idx))} className="text-red-400 hover:text-red-300 font-['koulen'] text-[16px] px-1">✕</button>
+                    </div>
+                ))}
+                {promoArmando ? (
+                    <ArmarPromo promo={promoArmando} products={products}
+                        onCancelar={() => setPromoArmando(null)}
+                        onAgregar={p => { setPromosNuevas(arr => [...arr, p]); setPromoArmando(null) }} />
+                ) : (
+                    <select value="" onChange={e => setPromoArmando(promos.find(p => p.id === Number(e.target.value)) ?? null)}
+                        className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] px-3 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60">
+                        <option value="">{promos.length ? "+ Agregar promo..." : "Sin promos activas"}</option>
+                        {promos.map(p => <option key={p.id} value={p.id}>{p.name} — {fmt(p.price)}</option>)}
+                    </select>
+                )}
+            </div>
+
+            <div className="flex items-center justify-between bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3">
+                <span className="font-['koulen'] text-[13px] text-white/50">TOTAL</span>
+                <span className="font-['koulen'] text-[16px]">
+                    {fmt(sale.total)}
+                    {delta !== 0 && <> → <span className="text-[#00FF1E]">{fmt(Math.max(0, sale.total + delta))}</span></>}
+                </span>
+            </div>
+            <p className="font-['koulen'] text-[11px] text-white/30 -mt-3">
+                El stock se descuenta y devuelve al guardar. Las promos se calculan con su precio actual.
+            </p>
+
+            {error && <p className="font-['koulen'] text-[13px] text-red-400">{error}</p>}
+            <div className="flex gap-3 justify-end">
+                <Btn color="ghost" onClick={onClose}>CANCELAR</Btn>
+                <Btn onClick={guardar} disabled={loading || !hayCambios}>{loading ? "GUARDANDO..." : "GUARDAR"}</Btn>
+            </div>
+        </Modal>
+    )
+}
+
+const SaleCard = ({ sale, onRefresh, rubro, products }) => {
     const [showCancel, setShowCancel] = useState(false)
     const [showShipping, setShowShipping] = useState(false)
+    const [showProductos, setShowProductos] = useState(false)
     const [showEdit, setShowEdit] = useState(false)
     const [loadingStatus, setLoadingStatus] = useState(null)
     const [showTicket, setShowTicket] = useState(false)
@@ -784,13 +1043,14 @@ const SaleCard = ({ sale, onRefresh }) => {
                         {sale.shippingPrice > 0 ? `ENVÍO: ${fmt(sale.shippingPrice)}` : "+ ENVÍO"}
                     </Btn>
                     <Btn small color="ghost" onClick={() => setShowEdit(true)}>EDITAR</Btn>
+                    <Btn small color="ghost" onClick={() => setShowProductos(true)}>PRODUCTOS</Btn>
                     <Btn small color="ghost" onClick={() => setShowTicket(true)}>🖨️ TICKET</Btn>
                     {nextStatuses.map(s => (
                         <Btn key={s} small
-                            color={s === "cancelled" ? "red" : s === "delivered" ? "green" : s === "paid" ? "gold" : "purple"}
+                            color={s === "cancelled" ? "red" : s === "delivered" ? "green" : s === "paid" ? "gold" : s === "pending" ? "ghost" : "purple"}
                             onClick={() => handleStatus(s)}
                             disabled={loadingStatus === s}>
-                            {loadingStatus === s ? "..." : STATUS_LABELS[s].label}
+                            {loadingStatus === s ? "..." : s === "pending" ? "↩ PENDIENTE" : STATUS_LABELS[s].label}
                         </Btn>
                     ))}
                 </div>
@@ -799,15 +1059,32 @@ const SaleCard = ({ sale, onRefresh }) => {
             {showCancel && <CancelModal saleId={sale.id} onClose={() => setShowCancel(false)} onSaved={() => { setShowCancel(false); onRefresh() }} />}
             {showShipping && <ShippingModal sale={sale} onClose={() => setShowShipping(false)} onSaved={() => { setShowShipping(false); onRefresh() }} />}
             {showEdit && <EditSaleModal sale={sale} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); onRefresh() }} />}
+            {showProductos && <EditarProductosModal sale={sale} rubro={rubro} products={products}
+                onClose={() => setShowProductos(false)} onSaved={() => { setShowProductos(false); onRefresh() }} />}
             {showTicket && <TicketVenta sale={sale} onClose={() => setShowTicket(false)} />}
         </div>
     )
 }
 
 // ─── Fila historial ───────────────────────────────────────────────────────────
-const HistoryRow = ({ sale }) => {
+const HistoryRow = ({ sale, onRefresh }) => {
     const [open, setOpen] = useState(false)
     const [showTicket, setShowTicket] = useState(false)
+    const [reabriendo, setReabriendo] = useState(false)
+    const [errorReabrir, setErrorReabrir] = useState("")
+
+    // Entregada → vuelve a la lista de en proceso como PENDIENTE
+    const volverAEnProceso = async () => {
+        if (!confirm(`¿Volver la venta #${sale.id} a en proceso?`)) return
+        setReabriendo(true); setErrorReabrir("")
+        try {
+            await api.patch(`/admin/sales/${sale.id}/reopen`, {}, authHeaders())
+            onRefresh()
+        } catch (e) {
+            setErrorReabrir(e.response?.data?.error || "No se pudo volver a en proceso")
+            setReabriendo(false)
+        }
+    }
     const statusInfo = STATUS_LABELS[sale.status]
     const isCancelled = sale.status === 'cancelled'
 
@@ -941,6 +1218,15 @@ const HistoryRow = ({ sale }) => {
                             </p>
                         </div>
                     </div>
+
+                    {sale.status === 'delivered' && (
+                        <div className="flex flex-col items-end gap-1">
+                            <Btn small color="ghost" onClick={volverAEnProceso} disabled={reabriendo}>
+                                {reabriendo ? "..." : "↩ VOLVER A EN PROCESO"}
+                            </Btn>
+                            {errorReabrir && <p className="font-['koulen'] text-[12px] text-red-400">{errorReabrir}</p>}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -1073,7 +1359,7 @@ const AdminVentas = () => {
                     )}
                     {inProcess.length === 0
                         ? <p className="font-['koulen'] text-white/20 text-center py-10 tracking-widest">SIN VENTAS EN PROCESO</p>
-                        : inProcess.map(s => <SaleCard key={s.id} sale={s} onRefresh={() => fetchInProcess()} />)
+                        : inProcess.map(s => <SaleCard key={s.id} sale={s} rubro={rubro} products={products} onRefresh={() => fetchInProcess()} />)
                     }
                 </div>
             ) : (
@@ -1126,7 +1412,7 @@ const AdminVentas = () => {
 
                     {history.length === 0
                         ? <p className="font-['koulen'] text-white/20 text-center py-10 tracking-widest">SIN HISTORIAL</p>
-                        : history.map(s => <HistoryRow key={s.id} sale={s} />)
+                        : history.map(s => <HistoryRow key={s.id} sale={s} onRefresh={() => { fetchHistory(); fetchInProcess(true) }} />)
                     }
                 </div>
             )}

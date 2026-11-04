@@ -34,6 +34,29 @@ const updateStatus = async (req, res) => {
     }
 }
 
+const editItems = async (req, res) => {
+    try {
+        const { quantities, removePromos, addItems, addPromos } = req.body || {}
+        const r = await adminSalesModel.editItems(req.params.id, { quantities, removePromos, addItems, addPromos })
+        res.json({ ok: true, ...r })
+    } catch (e) {
+        if (e.code === 'EDIT_INVALID') return res.status(400).json({ error: e.message })
+        console.error(e)
+        res.status(500).json({ error: 'Error al editar los productos' })
+    }
+}
+
+const reopen = async (req, res) => {
+    try {
+        const status = await adminSalesModel.reopen(req.params.id)
+        if (!status) return res.status(409).json({ error: 'Solo se pueden volver a en proceso las ventas entregadas' })
+        res.json({ ok: true, status })
+    } catch (e) {
+        console.error(e)
+        res.status(500).json({ error: 'Error al volver la venta a en proceso' })
+    }
+}
+
 const updateShipping = async (req, res) => {
     try {
         const { id } = req.params
@@ -90,4 +113,4 @@ const createManual = async (req, res) => {
     }
 }
 
-module.exports = { getInProcess, getHistory, updateStatus, updateShipping, updateSale, createManual }
+module.exports = { editItems, reopen, getInProcess, getHistory, updateStatus, updateShipping, updateSale, createManual }

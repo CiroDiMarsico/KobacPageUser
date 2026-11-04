@@ -185,7 +185,10 @@ const updateStatus = async (id, status, cancelReason = null) => {
         let extraFields = ''
         const params = [status]
 
-        if (status === 'shipping') {
+        if (status === 'pending') {
+            // Volver a pendiente: la salida y llegada se registran de nuevo
+            extraFields = ', departure_at = NULL, arrived_at = NULL'
+        } else if (status === 'shipping') {
             extraFields = ', departure_at = CASE WHEN departure_at IS NULL THEN NOW() ELSE departure_at END'
         } else if (status === 'delivered') {
             extraFields = ', arrived_at = CASE WHEN arrived_at IS NULL THEN NOW() ELSE arrived_at END'
@@ -234,6 +237,21 @@ const updateStatus = async (id, status, cancelReason = null) => {
     } finally {
         conn.release()
     }
+}
+
+// ─── REOPEN ───────────────────────────────────────────────────────────────────
+// Una venta entregada vuelve a en proceso como PENDIENTE. Se borran las horas
+// de salida y llegada para que se registren de nuevo. Devuelve el estado nuevo,
+// o null si la venta no estaba entregada.
+const reopen = async (id) => {
+    const [result] = await pool.query(`
+        UPDATE sales
+        SET status = 'pending', departure_at = NULL, arrived_at = NULL
+        WHERE id = ? AND status = 'delivered'
+    `, [id])
+    if (result.affectedRows === 0) return null
+    const [[venta]] = await pool.query(`SELECT status FROM sales WHERE id = ?`, [id])
+    return venta.status
 }
 
 // ─── UPDATE SHIPPING ──────────────────────────────────────────────────────────
@@ -377,6 +395,172 @@ const createManual = async ({ clientName, clientPhone, location, rubro, items, p
     }
 }
 
+// ─── EDITAR PRODUCTOS DE UNA VENTA EN PROCESO ─────────────────────────────────
+// Cambios que llegan del admin:
+//   quantities:   { itemId: nuevaCantidad }   productos sueltos (0 = quitar)
+//   removePromos: [promoId]                   saca la promo completa
+//   addItems:     [{ variantId, quantity, unitPrice }]
+//   addPromos:    [{ promoId, variants: [{ variantId, quantity }] }]
+// El stock se devuelve/descuenta por lote y el total se ajusta por diferencia,
+// así los descuentos que ya tenía la venta se mantienen.
+
+const errorEdicion = (mensaje) => Object.assign(new Error(mensaje), { code: 'EDIT_INVALID' })
+
+// Devuelve `cantidad` unidades de un item al stock, empezando por los últimos
+// lotes usados. Ajusta los movimientos de salida para que el costo de la venta
+// siga siendo correcto, y deja un movimiento de devolución.
+const devolverStockItem = async (conn, item, cantidad) => {
+    const [movs] = await conn.query(`
+        SELECT id, lot_id, quantity FROM stock_movements
+        WHERE sale_item_id = ? AND type = 'out' AND reason = 'sale'
+        ORDER BY id DESC FOR UPDATE
+    `, [item.id])
+
+    let falta = cantidad
+    for (const mov of movs) {
+        if (falta <= 0) break
+        const q = Math.min(mov.quantity, falta)
+        if (q === mov.quantity) await conn.query(`DELETE FROM stock_movements WHERE id = ?`, [mov.id])
+        else await conn.query(`UPDATE stock_movements SET quantity = quantity - ? WHERE id = ?`, [q, mov.id])
+        await conn.query(`UPDATE lots SET remaining_quantity = remaining_quantity + ? WHERE id = ?`, [q, mov.lot_id])
+        await conn.query(`
+            INSERT INTO stock_movements (variant_id, lot_id, type, quantity, reason)
+            VALUES (?, ?, 'in', ?, 'return')
+        `, [item.variant_id, mov.lot_id, q])
+        falta -= q
+    }
+    await conn.query(`UPDATE variants SET stock = stock + ? WHERE id = ?`, [cantidad, item.variant_id])
+}
+
+const verificarStock = async (conn, variantId, cantidad) => {
+    const [[v]] = await conn.query(`
+        SELECT v.stock, v.name, p.name AS product_name FROM variants v
+        JOIN products p ON p.id = v.product_id WHERE v.id = ? FOR UPDATE
+    `, [variantId])
+    if (!v) throw errorEdicion('Producto inexistente')
+    if (v.stock < cantidad)
+        throw errorEdicion(`No hay stock suficiente de ${v.product_name} ${v.name} (quedan ${v.stock})`)
+}
+
+// Cuántas promos completas representan las unidades de una promo en la venta
+const cantidadDePromos = async (conn, promoId, unidades) => {
+    const [[r]] = await conn.query(`SELECT SUM(quantity) AS por_promo FROM promo_items WHERE promo_id = ?`, [promoId])
+    const porPromo = Number(r?.por_promo) || 0
+    return porPromo > 0 ? Math.max(1, Math.round(unidades / porPromo)) : 1
+}
+
+const editItems = async (id, { quantities = {}, removePromos = [], addItems = [], addPromos = [] }) => {
+    await reservaModel.asegurarColumna()
+    const conn = await pool.getConnection()
+    try {
+        await conn.beginTransaction()
+
+        const [[venta]] = await conn.query(`SELECT id, status, total FROM sales WHERE id = ? FOR UPDATE`, [id])
+        if (!venta) throw errorEdicion('La venta no existe')
+        if (['delivered', 'cancelled'].includes(venta.status))
+            throw errorEdicion('Solo se pueden editar los productos de ventas en proceso')
+
+        const [items] = await conn.query(`SELECT id, variant_id, promo_id, quantity, unit_price FROM sale_items WHERE sale_id = ?`, [id])
+        let delta = 0
+
+        // Productos sueltos: cambiar cantidad o quitar
+        for (const [itemId, nueva] of Object.entries(quantities)) {
+            const item = items.find(i => i.id === Number(itemId) && !i.promo_id)
+            const cantidad = Number(nueva)
+            if (!item || !Number.isInteger(cantidad) || cantidad < 0) throw errorEdicion('Cantidad inválida')
+            const diferencia = cantidad - item.quantity
+            if (diferencia === 0) continue
+
+            if (diferencia < 0) await devolverStockItem(conn, item, -diferencia)
+            else {
+                await verificarStock(conn, item.variant_id, diferencia)
+                await descontarFIFO(conn, item.variant_id, diferencia, item.id)
+            }
+            if (cantidad === 0) await conn.query(`DELETE FROM sale_items WHERE id = ?`, [item.id])
+            else await conn.query(`UPDATE sale_items SET quantity = ? WHERE id = ?`, [cantidad, item.id])
+            delta += diferencia * Number(item.unit_price)
+        }
+
+        // Promos: se sacan completas
+        for (const promoId of removePromos) {
+            const itemsPromo = items.filter(i => i.promo_id === Number(promoId))
+            if (itemsPromo.length === 0) throw errorEdicion('La promo no está en la venta')
+            const unidades = itemsPromo.reduce((a, i) => a + i.quantity, 0)
+            const veces = await cantidadDePromos(conn, promoId, unidades)
+            const [[promo]] = await conn.query(`SELECT price FROM promos WHERE id = ?`, [promoId])
+            for (const item of itemsPromo) {
+                await devolverStockItem(conn, item, item.quantity)
+                await conn.query(`DELETE FROM sale_items WHERE id = ?`, [item.id])
+            }
+            delta -= Number(promo?.price ?? 0) * veces
+        }
+
+        // Productos nuevos
+        for (const nuevo of addItems) {
+            const cantidad = Number(nuevo.quantity)
+            const precio = Number(nuevo.unitPrice)
+            if (!Number.isInteger(cantidad) || cantidad <= 0 || !(precio >= 0)) throw errorEdicion('Producto inválido')
+            await verificarStock(conn, nuevo.variantId, cantidad)
+            const [r] = await conn.query(`
+                INSERT INTO sale_items (sale_id, variant_id, promo_id, quantity, unit_price) VALUES (?, ?, NULL, ?, ?)
+            `, [id, nuevo.variantId, cantidad, precio])
+            await descontarFIFO(conn, nuevo.variantId, cantidad, r.insertId)
+            delta += cantidad * precio
+        }
+
+        // Promos nuevas: tienen que venir completas (por cada producto de la promo,
+        // variantes de ese producto que sumen exactamente la cantidad que pide)
+        for (const nueva of addPromos) {
+            const [[promo]] = await conn.query(`SELECT id, price FROM promos WHERE id = ?`, [nueva.promoId])
+            if (!promo) throw errorEdicion('La promo no existe')
+            const [requeridos] = await conn.query(`SELECT product_id, quantity FROM promo_items WHERE promo_id = ?`, [promo.id])
+            if (requeridos.length === 0) throw errorEdicion('La promo no tiene productos cargados')
+
+            const elegidas = (nueva.variants || []).filter(v => Number(v.quantity) > 0)
+            const porProducto = {}
+            for (const v of elegidas) {
+                const [[variante]] = await conn.query(`SELECT product_id FROM variants WHERE id = ?`, [v.variantId])
+                if (!variante) throw errorEdicion('Producto inexistente en la promo')
+                porProducto[variante.product_id] = (porProducto[variante.product_id] || 0) + Number(v.quantity)
+            }
+            const completa = requeridos.every(r => porProducto[r.product_id] === r.quantity)
+                && Object.keys(porProducto).length === requeridos.length
+            if (!completa) throw errorEdicion('La promo tiene que ir completa')
+
+            for (const v of elegidas) {
+                const cantidad = Number(v.quantity)
+                await verificarStock(conn, v.variantId, cantidad)
+                const [r] = await conn.query(`
+                    INSERT INTO sale_items (sale_id, variant_id, promo_id, quantity, unit_price) VALUES (?, ?, ?, ?, 0)
+                `, [id, v.variantId, promo.id, cantidad])
+                await descontarFIFO(conn, v.variantId, cantidad, r.insertId)
+            }
+            delta += Number(promo.price)
+        }
+
+        const [[quedan]] = await conn.query(`SELECT COUNT(*) AS n FROM sale_items WHERE sale_id = ?`, [id])
+        if (quedan.n === 0) throw errorEdicion('La venta tiene que tener al menos un producto. Si no, cancelala.')
+
+        // Total y pago: se ajustan por la diferencia. Con un solo pago se ajusta
+        // su monto; con pago mixto se deja para corregir desde EDITAR.
+        const nuevoTotal = Math.max(0, Number(venta.total) + delta)
+        await conn.query(`UPDATE sales SET total = ? WHERE id = ?`, [nuevoTotal, id])
+        const [pagos] = await conn.query(`SELECT id, amount FROM sale_payments WHERE sale_id = ?`, [id])
+        if (pagos.length === 1) {
+            await conn.query(`UPDATE sale_payments SET amount = ? WHERE id = ?`,
+                [Math.max(0, Number(pagos[0].amount) + delta), pagos[0].id])
+        }
+
+        await conn.commit()
+        return { total: nuevoTotal, delta, pagoMixto: pagos.length > 1 }
+    } catch (e) {
+        await conn.rollback()
+        throw e
+    } finally {
+        conn.release()
+    }
+}
+
 // ─── FIFO ─────────────────────────────────────────────────────────────────────
 const descontarFIFO = async (conn, variantId, quantity, saleItemId) => {
     const [lots] = await conn.query(`
@@ -399,4 +583,4 @@ const descontarFIFO = async (conn, variantId, quantity, saleItemId) => {
     await conn.query(`UPDATE variants SET stock = stock - ? WHERE id = ?`, [quantity, variantId])
 }
 
-module.exports = { getInProcess, getHistory, updateStatus, updateShipping, updateSale, createManual }
+module.exports = { getInProcess, getHistory, updateStatus, updateShipping, updateSale, createManual, reopen, editItems }

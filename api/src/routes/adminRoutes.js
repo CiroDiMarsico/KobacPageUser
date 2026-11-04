@@ -44,6 +44,8 @@ router.get('/sales/inprocess',      salesCtrl.getInProcess)
 router.get('/sales/history',        salesCtrl.getHistory)
 router.post('/sales',               salesCtrl.createManual)
 router.patch('/sales/:id/status',   salesCtrl.updateStatus)
+router.patch('/sales/:id/reopen',   salesCtrl.reopen)
+router.put('/sales/:id/items',      salesCtrl.editItems)
 router.patch('/sales/:id/shipping', salesCtrl.updateShipping)
 router.put('/sales/:id',            salesCtrl.updateSale)
 
