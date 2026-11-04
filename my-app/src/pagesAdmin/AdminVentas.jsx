@@ -12,6 +12,13 @@ const fmtTime = (d) => d ? new Date(d).toLocaleTimeString("es-AR", { hour: "2-di
 const fmtDateTime = (d) => d ? `${fmtDate(d)} ${fmtTime(d)}` : "—"
 const todayISO = () => new Date().toISOString().split("T")[0]
 
+// Etiqueta de pedido reservado para una hora de la noche
+const Reservado = ({ sale }) => sale.scheduledFor ? (
+    <span className="font-['koulen'] text-[13px] px-3 py-1 rounded-full border bg-sky-400/15 border-sky-400/30 text-sky-300">
+        🕐 RESERVADO {fmtTime(sale.scheduledFor)} HS
+    </span>
+) : null
+
 const STATUS_LABELS = {
     pending: { label: "PENDIENTE", color: "text-gray-300", bg: "bg-gray-300/10 border-gray-300/25" },
     // "paid" en la base, se muestra como CONFIRMADO
@@ -665,6 +672,7 @@ const SaleCard = ({ sale, onRefresh }) => {
                     <span className={`font-['koulen'] text-[13px] px-3 py-1 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
                         {statusInfo.label}
                     </span>
+                    <Reservado sale={sale} />
                     {sale.isWholesale && (
                         <span className="font-['koulen'] text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">MAYORISTA</span>
                     )}
@@ -790,6 +798,7 @@ const HistoryRow = ({ sale }) => {
                 <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-['koulen'] text-[13px] text-white/30">#{sale.id}</span>
                     <span className={`font-['koulen'] text-[13px] ${statusInfo.color}`}>{statusInfo.label}</span>
+                    <Reservado sale={sale} />
                     {sale.isWholesale && (
                         <span className="font-['koulen'] text-[11px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">MAYORISTA</span>
                     )}

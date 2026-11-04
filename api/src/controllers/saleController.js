@@ -4,6 +4,7 @@ const discountModel = require('../models/discountModel')
 const pool = require('../db/connection')
 const { notificarVenta } = require('./pushController')
 const { asegurarColumna, SQL_PRECIO_FINAL } = require('../models/productDiscountModel')
+const reservaModel = require('../models/reservaModel')
 
 // Vapes: 25% off en cada unidad par (2da, 4ta...), contando todas las unidades de
 // vapes del carrito juntas en el orden en que vienen. Tiene que coincidir con
@@ -16,11 +17,24 @@ const PORCENTAJE_DESCUENTO_EXTRAS_PROMO = 10
 
 const create = async (req, res) => {
     await asegurarColumna()
+    await reservaModel.asegurarColumna()
     const conn = await pool.getConnection()
     try {
         await conn.beginTransaction()
 
-        const { informacion, carrito, rubro, discount, payments, location } = req.body
+        const { informacion, carrito, rubro, discount, payments, location, scheduledTime } = req.body
+
+        // Reserva para una hora de esta misma noche (opcional)
+        let scheduledFor = null
+        if (scheduledTime) {
+            const fecha = reservaModel.resolverHorario(scheduledTime)
+            if (!fecha) {
+                const err = new Error('Horario de reserva invalido')
+                err.code = 'SCHEDULE_INVALID'
+                throw err
+            }
+            scheduledFor = reservaModel.aSQL(fecha)
+        }
 
         const clientId = await clientModel.findOrCreate(informacion.nombre, informacion.telefono)
 
@@ -156,7 +170,7 @@ const create = async (req, res) => {
 
         const saleId = await saleModel.create(conn, {
             clientId, rubro, total: calculatedTotal, discountCodeId, discountAmount, weekCode,
-            location: location || null
+            location: location || null, scheduledFor
         })
 
         // Asignar saleId a cada item
@@ -191,6 +205,9 @@ const create = async (req, res) => {
                 agotados: error.agotados,
                 parciales: error.parciales
             })
+        }
+        if (error.code === 'SCHEDULE_INVALID') {
+            return res.status(409).json({ code: 'SCHEDULE_INVALID' })
         }
         if (error.code === 'DISCOUNT_INVALID') {
             return res.status(409).json({ code: 'DISCOUNT_INVALID' })

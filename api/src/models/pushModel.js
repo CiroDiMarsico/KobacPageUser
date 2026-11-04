@@ -74,7 +74,7 @@ const getSubscriptions = async () => {
 // Resumen de una venta para armar la notificacion.
 const getSaleSummary = async (saleId) => {
     const [[sale]] = await pool.query(`
-        SELECT s.id, s.rubro, s.total, s.location, c.name AS client_name,
+        SELECT s.id, s.rubro, s.total, s.location, s.scheduled_for, c.name AS client_name,
                (SELECT GROUP_CONCAT(DISTINCT sp.method) FROM sale_payments sp WHERE sp.sale_id = s.id) AS methods
         FROM sales s
         LEFT JOIN clients c ON c.id = s.client_id

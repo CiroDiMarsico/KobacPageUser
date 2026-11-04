@@ -60,7 +60,10 @@ const armarNotificacionVenta = (venta) => {
     }
 
     const pago = (venta.methods || '').split(',').filter(Boolean).map(m => PAGOS[m] ?? m).join(' + ')
+    const hora = venta.scheduled_for ? new Date(venta.scheduled_for) : null
+    const reserva = hora && `🕐 RESERVADO para las ${String(hora.getHours()).padStart(2, '0')}:${String(hora.getMinutes()).padStart(2, '0')}`
     const body = [
+        reserva,
         venta.client_name,
         ...lineas,
         pago && `Pago: ${pago}`,

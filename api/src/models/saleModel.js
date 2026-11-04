@@ -1,10 +1,10 @@
 const pool = require('../db/connection')
 
-const create = async (conn, { clientId, rubro, total, discountCodeId, discountAmount, weekCode, location }) => {
+const create = async (conn, { clientId, rubro, total, discountCodeId, discountAmount, weekCode, location, scheduledFor }) => {
     const [result] = await conn.query(`
-        INSERT INTO sales (rubro, client_id, is_wholesale, status, total, discount_code_id, discount_amount, week_code, location)
-        VALUES (?, ?, FALSE, 'pending', ?, ?, ?, ?, ?)
-    `, [rubro, clientId, total, discountCodeId || null, discountAmount || 0, weekCode, location || null])
+        INSERT INTO sales (rubro, client_id, is_wholesale, status, total, discount_code_id, discount_amount, week_code, location, scheduled_for)
+        VALUES (?, ?, FALSE, 'pending', ?, ?, ?, ?, ?, ?)
+    `, [rubro, clientId, total, discountCodeId || null, discountAmount || 0, weekCode, location || null, scheduledFor || null])
     return result.insertId
 }
 

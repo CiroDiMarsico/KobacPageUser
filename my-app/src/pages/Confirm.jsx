@@ -5,6 +5,7 @@ import api from '../api/axios'
 import ubiIcon from '/assets/ubi.webp'
 import { calcDescuentoVapes, PORCENTAJE_DESCUENTO_VAPES } from '../utils/descuentoVapes'
 import { totalExtras, DESCUENTO_EXTRAS_PROMO } from '../utils/otros'
+import { horariosDisponibles } from '../utils/reserva'
 
 const Confirm = () => {
 
@@ -34,6 +35,20 @@ const Confirm = () => {
   const [loadingConfirm, setLoadingConfirm] = useState(false);
   const [modalAgotados, setModalAgotados] = useState(null)
   const [modalDescuentoInvalido, setModalDescuentoInvalido] = useState(false)
+
+  // Reserva: "ahora" o una hora de esta misma noche (solo viernes y sábados)
+  const [horarios, setHorarios] = useState(() => horariosDisponibles())
+  const [cuando, setCuando] = useState("ahora")
+  const [hora, setHora] = useState("")
+  const horaReservada = cuando === "reservar" ? hora : null
+
+  const elegirReservar = () => {
+    const disponibles = horariosDisponibles()
+    setHorarios(disponibles)
+    if (disponibles.length === 0) { setCuando("ahora"); return }
+    setCuando("reservar")
+    if (!disponibles.includes(hora)) setHora(disponibles[0])
+  }
 
   const handleApplyDiscount = async () => {
     try {
@@ -172,7 +187,7 @@ const Confirm = () => {
       }).join('\n\n')
 
     return `
-🛵 *PEDIDO #${String(saleId).padStart(5, '0')}*
+🛵 *PEDIDO #${String(saleId).padStart(5, '0')}*${horaReservada ? `\n🕐 *RESERVADO PARA LAS ${horaReservada} HS*` : ''}
 
 👤 *Nombre:* ${informacion.nombre.toLowerCase()}
 📲 *Teléfono:* ${informacion.telefono}
@@ -218,7 +233,8 @@ ${descuentoVapesActual.total > 0 ? `🔥 *2da unidad ${PORCENTAJE_DESCUENTO_VAPE
       rubro,
       discount: discount ? { id: discount.id, code: discount.code, amount: discountAmountActual } : null,
       payments,
-      total: totalActual
+      total: totalActual,
+      scheduledTime: horaReservada
     })
     const saleId = res.data.saleId
     const mensaje = armarMensaje(carritoActual, totalActual, subtotalActual, saleId, descuentoVapesActual)
@@ -265,6 +281,13 @@ ${descuentoVapesActual.total > 0 ? `🔥 *2da unidad ${PORCENTAJE_DESCUENTO_VAPE
           promosEliminadas,
           carritoAjustado
         })
+      } else if (resData?.code === 'SCHEDULE_INVALID') {
+        // El horario elegido ya pasó: se refrescan las opciones
+        const disponibles = horariosDisponibles()
+        setHorarios(disponibles)
+        setHora(disponibles[0] ?? "")
+        if (disponibles.length === 0) setCuando("ahora")
+        alert('Ese horario ya no está disponible. Elegí otro y confirmá de nuevo.')
       } else if (resData?.code === 'DISCOUNT_INVALID') {
         setDiscount(null)
         setDiscountCode('')
@@ -336,6 +359,27 @@ ${descuentoVapesActual.total > 0 ? `🔥 *2da unidad ${PORCENTAJE_DESCUENTO_VAPE
               <Button text="AMBOS" width="200px" height="50px" click={() => { setShow("ambos") }} color={show == "ambos" ? "#C32CFF" : "#1E1E1E"} textColor={show == "ambos" ? "#ffffff" : "#C32CFF"} />
             </div>
           </div>
+          {/* Reserva: solo viernes y sábados mientras queden horarios esta noche */}
+          {horarios.length > 0 && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex justify-center items-center gap-4">
+                <span className="font-['prompt'] text-3xl font-bold text-center">CUANDO LO QUERES?</span>
+                <div className="flex flex-col items-end gap-2">
+                  <Button text="AHORA" width="200px" height="50px" click={() => setCuando("ahora")} color={cuando === "ahora" ? "#C32CFF" : "#1E1E1E"} textColor={cuando === "ahora" ? "#ffffff" : "#C32CFF"} />
+                  <Button text="RESERVAR" width="200px" height="50px" click={elegirReservar} color={cuando === "reservar" ? "#C32CFF" : "#1E1E1E"} textColor={cuando === "reservar" ? "#ffffff" : "#C32CFF"} />
+                </div>
+              </div>
+              {cuando === "reservar" && (
+                <label className="flex items-center gap-3 font-['koulen'] text-[22px]">
+                  <span>🕐 PARA LAS</span>
+                  <select value={hora} onChange={e => setHora(e.target.value)}
+                    className="bg-[#1E1E1E] text-[#C32CFF] border border-[#C32CFF]/50 rounded-xl h-[44px] px-4 font-['koulen'] text-[22px] outline-none">
+                    {horarios.map(h => <option key={h} value={h}>{h} HS</option>)}
+                  </select>
+                </label>
+              )}
+            </div>
+          )}
           {/* En vapes no se usan cupones: ya tienen el 25% off en la 2da unidad */}
           {rubro !== 'vapes' && (
             <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100 bg-[#6F3784] w-[300px] rounded-xl h-[30px] flex items-center justify-center">¿Tienes un cupon de descuento?</a>

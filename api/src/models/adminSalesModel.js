@@ -1,4 +1,5 @@
 const pool = require('../db/connection')
+const reservaModel = require('./reservaModel')
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const getWeekNumber = (date) => {
@@ -36,6 +37,7 @@ const buildSales = (rows) => {
                 total: Number(row.total),
                 shippingPrice: Number(row.shipping_price),
                 location: row.location,
+                scheduledFor: row.scheduled_for ?? null,
                 discountAmount: Number(row.discount_amount),
                 discountCode: row.discount_code ?? null,
                 exchangeRate: row.exchange_rate ? Number(row.exchange_rate) : null,
@@ -88,7 +90,7 @@ const BASE_QUERY = `
     SELECT
         s.id, s.rubro, s.is_wholesale, s.status, s.cancel_reason, s.total,
         s.shipping_price, s.location, s.discount_amount, s.week_code,
-        s.created_at, s.updated_at, s.departure_at, s.arrived_at,
+        s.created_at, s.updated_at, s.departure_at, s.arrived_at, s.scheduled_for,
         s.exchange_rate,
         s.discount_amount,
         dc.code AS discount_code,
@@ -133,6 +135,7 @@ const attachPayments = async (sales) => {
 
 // ─── GET IN PROCESS ───────────────────────────────────────────────────────────
 const getInProcess = async (rubro) => {
+    await reservaModel.asegurarColumna()
     const [rows] = await pool.query(
         BASE_QUERY + `
         WHERE s.rubro = ? AND s.status NOT IN ('delivered', 'cancelled')
@@ -147,6 +150,7 @@ const getInProcess = async (rubro) => {
 // ─── GET HISTORY ──────────────────────────────────────────────────────────────
 // solo ventas entregadas o canceladas, filtrando canceladas del conteo de ganancias
 const getHistory = async (rubro, weeks, date) => {
+    await reservaModel.asegurarColumna()
     let whereExtra = ''
     const params = [rubro]
 
