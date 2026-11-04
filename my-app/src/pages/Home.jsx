@@ -10,12 +10,13 @@ import Cart from "../components/Cart";
 import grafittiKobac from "/assets/grafittiKobac.webp";
 import lupaIcon from "/assets/lupa.webp";
 import api from '../api/axios'
-import { useCarrito } from "../hooks/useCarrito"
+import { useCarrito, actualizarPreciosCarrito } from "../hooks/useCarrito"
 const Home = () => {
   // ------------------------------
   //-------------DATOS-------------
   // ------------------------------
   const [data, setData] = useState([])
+  const [carrito, setCarrito] = useCarrito("carrito");
   const [promos, setPromos] = useState([])
   const [carousel, setCarousel] = useState([])
   const [marquee, setMarquee] = useState([])
@@ -40,6 +41,9 @@ const Home = () => {
     ])
       .then(([resProductos, resPromos, resConfig]) => {
         setData(resProductos.data)
+        // El carrito guardado puede tener precios viejos (ej: un descuento que
+        // empezó o terminó): se actualizan con los de ahora.
+        setCarrito(prev => actualizarPreciosCarrito(prev, resProductos.data))
         setPromos(resPromos.data)
         setCarousel(resConfig.data.carousel)
         setMarquee(resConfig.data.marquee)
@@ -72,7 +76,6 @@ const Home = () => {
 
   const [show, setShow] = useState("promos");
 
-  const [carrito, setCarrito] = useCarrito("carrito");
 
   const agregarAlCarrito = (product, quantities) => {
     setCarrito(prev => {

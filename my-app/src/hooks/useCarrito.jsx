@@ -48,3 +48,17 @@ export const useCarrito = (key = "carrito") => {
 
     return [carrito, setCarritoRaw]
 }
+
+// Reemplaza el precio de los productos sueltos del carrito por el actual.
+// Devuelve el mismo array si no cambió nada (evita re-renders).
+export const actualizarPreciosCarrito = (carrito, productos) => {
+    let cambio = false
+    const nuevo = carrito.map(item => {
+        if (item.isPromo) return item
+        const producto = productos.find(p => p.id === item.idProduct)
+        if (!producto || producto.salePrice === item.precio) return item
+        cambio = true
+        return { ...item, precio: producto.salePrice }
+    })
+    return cambio ? nuevo : carrito
+}

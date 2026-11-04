@@ -1,4 +1,5 @@
 const adminProductModel = require('../models/adminProductModel')
+const productDiscountModel = require('../models/productDiscountModel')
 
 const getAll = async (req, res) => {
     try {
@@ -85,4 +86,21 @@ const createCategory = async (req, res) => {
     }
 }
 
-module.exports = { getAll, getCategories, create, update, createVariant, updateVariant, createCategory }
+// Aplica (o quita, con 0) un % de descuento a varios productos a la vez
+const setDiscount = async (req, res) => {
+    try {
+        const { ids, percent } = req.body || {}
+        const pct = Number(percent)
+        const idsValidos = Array.isArray(ids) ? ids.map(Number).filter(n => Number.isInteger(n) && n > 0) : []
+        if (idsValidos.length === 0) return res.status(400).json({ error: 'Elegí al menos un producto' })
+        if (!Number.isInteger(pct) || pct < 0 || pct > 99)
+            return res.status(400).json({ error: 'El descuento tiene que ser un número entero entre 0 y 99' })
+        const actualizados = await productDiscountModel.setDiscount(idsValidos, pct)
+        res.json({ ok: true, actualizados })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: 'Error al aplicar el descuento' })
+    }
+}
+
+module.exports = { setDiscount, getAll, getCategories, create, update, createVariant, updateVariant, createCategory }

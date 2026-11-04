@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Button from "./Button";
+import PrecioProducto from "./PrecioProducto";
 
 const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getStockDisponible }) => {
   const [visible, setVisible] = useState(false);
@@ -46,7 +47,7 @@ const Popover = ({ product, onClose, onAgregar, quantities, setQuantities, getSt
 
         <div className="flex flex-col items-center gap-1 z-10 mt-2 mb-1 shrink-0">
           <h1 className="font-bold text-[28px] leading-none text-center px-6">{product.name.toUpperCase()}</h1>
-          <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none mt-1">${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice)}</h3>
+          <div className="mt-1"><PrecioProducto product={product} /></div>
         </div>
 
         <div className="w-full flex-1 overflow-y-auto z-10 pr-1 pt-5 flex flex-col gap-5 custom-scrollbar">

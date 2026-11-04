@@ -1,12 +1,16 @@
 const pool = require('../db/connection')
+const { asegurarColumna, SQL_PRECIO_FINAL } = require('./productDiscountModel')
 
 const getAll = async (rubro) => {
+    await asegurarColumna()
     const [rows] = await pool.query(`
         SELECT 
             p.id,
             p.name,
             p.image AS img,
-            p.sale_price AS salePrice,
+            ${SQL_PRECIO_FINAL} AS salePrice,
+            p.sale_price AS originalPrice,
+            p.discount_percent AS discountPercent,
             c.name AS category,
             v.id AS variantId,
             v.name AS variantName,
@@ -35,7 +39,10 @@ const getAll = async (rubro) => {
                 id: row.id,
                 name: row.name,
                 img: row.img,
-                salePrice: row.salePrice,
+                // salePrice ya trae el descuento aplicado: todo el carrito lo usa
+                salePrice: Number(row.salePrice),
+                originalPrice: Number(row.originalPrice),
+                discountPercent: Number(row.discountPercent) || 0,
                 category: row.category,
                 variants: []
             }

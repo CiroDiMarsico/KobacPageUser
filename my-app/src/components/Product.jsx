@@ -1,5 +1,6 @@
 import Button from "./Button";
 import Popover from "./Popover";
+import PrecioProducto from "./PrecioProducto";
 import { useState, useEffect } from "react";
 
 const Product = ({
@@ -85,7 +86,12 @@ const Product = ({
 
   return (
       <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt'] relative overflow-hidden" onClick={abrirPopover}>
-      {totalStock > 0 && totalStock <= 2 && (
+      {/* Banda roja: el descuento tiene prioridad sobre "últimas unidades" */}
+      {totalStock > 0 && product.discountPercent > 0 ? (
+        <div className="text-[16px] text-white leading-none font-bold flex items-center justify-center bg-red-500/90 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg] z-10">
+          <p>¡{product.discountPercent}% OFF!</p>
+        </div>
+      ) : totalStock > 0 && totalStock <= 2 && (
         <div className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
           <p>¡ULTIMAS</p>
           <p>UNIDADES!</p>
@@ -99,9 +105,7 @@ const Product = ({
           }`}>
           {product.name.toUpperCase()}
         </h1>
-        <h3 className="font-bold text-[18px] text-[#00FF1E] leading-none">
-          ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(product.salePrice)}
-        </h3>
+        <PrecioProducto product={product} />
       </div>
       <Button text={textoBoton} width="120px" height="34px" color="#C32CFF" textColor="#FFFFFF" textSize="18px" disabled={totalStock === 0} />
       {open && (

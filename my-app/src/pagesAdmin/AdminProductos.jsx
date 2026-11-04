@@ -304,7 +304,7 @@ const VariantRow = ({ variant, onEdit }) => (
     </div>
 )
 
-const ProductRow = ({ product, categories, rubro, onRefresh }) => {
+const ProductRow = ({ product, categories, rubro, onRefresh, seleccionable = false, seleccionado = false, onToggleSeleccion }) => {
     const [open, setOpen] = useState(false)
     const [editProduct, setEditProduct] = useState(false)
     const [editVariant, setEditVariant] = useState(null)
@@ -313,9 +313,16 @@ const ProductRow = ({ product, categories, rubro, onRefresh }) => {
     return (
         <div className="border border-white/10 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
-                onClick={() => setOpen(o => !o)}>
+                onClick={() => seleccionable ? onToggleSeleccion(product.id) : setOpen(o => !o)}>
                 <div className="flex items-center gap-3">
-                    <span className="font-['koulen'] text-[18px] leading-none text-white/40 hidden sm:block">{open ? "▼" : "▶"}</span>
+                    {seleccionable ? (
+                        <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 text-[12px] leading-none
+                            ${seleccionado ? "bg-[#C32CFF] border-[#C32CFF] text-white" : "border-white/30"}`}>
+                            {seleccionado && "✓"}
+                        </span>
+                    ) : (
+                        <span className="font-['koulen'] text-[18px] leading-none text-white/40 hidden sm:block">{open ? "▼" : "▶"}</span>
+                    )}
                     {product.image && (
                         <img src={product.image.startsWith('http') ? product.image : `${API_BASE}${product.image}`}
                             alt={product.name} className="h-9 w-9 object-contain rounded-lg bg-white/5" />
@@ -324,6 +331,11 @@ const ProductRow = ({ product, categories, rubro, onRefresh }) => {
                         <div className="flex items-center gap-2">
                             <span className="font-['koulen'] text-[18px]">{product.name}</span>
                             <Tag active={product.isActive} />
+                            {product.discountPercent > 0 && (
+                                <span className="font-['koulen'] text-[11px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">
+                                    -{product.discountPercent}%
+                                </span>
+                            )}
                         </div>
                         <span className="font-['koulen'] text-[12px] text-white/30">{product.category}</span>
                     </div>
@@ -331,13 +343,18 @@ const ProductRow = ({ product, categories, rubro, onRefresh }) => {
                 <div className="flex items-center gap-4">
                     <div className="text-right">
                         <p className="font-['koulen'] text-[11px] text-white/30">VENTA</p>
-                        <p className="font-['koulen'] text-[16px] text-[#00FF1E]">{fmt(product.salePrice)}</p>
+                        {product.discountPercent > 0 && (
+                            <p className="font-['koulen'] text-[12px] text-red-400 line-through leading-none">{fmt(product.salePrice)}</p>
+                        )}
+                        <p className="font-['koulen'] text-[16px] text-[#00FF1E]">{fmt(product.finalPrice ?? product.salePrice)}</p>
                     </div>
-                    <Btn small color="ghost" onClick={e => { e.stopPropagation(); setEditProduct(true) }}>EDITAR</Btn>
+                    {!seleccionable && (
+                        <Btn small color="ghost" onClick={e => { e.stopPropagation(); setEditProduct(true) }}>EDITAR</Btn>
+                    )}
                 </div>
             </div>
 
-            {open && (
+            {open && !seleccionable && (
                 <div className="px-4 pb-4 flex flex-col gap-2 border-t border-white/5 pt-3">
                     {product.variants.length === 0 && (
                         <p className="font-['koulen'] text-[14px] text-white/30 text-center py-2">Sin variantes</p>
@@ -361,6 +378,58 @@ const ProductRow = ({ product, categories, rubro, onRefresh }) => {
     )
 }
 
+// ─── Barra de descuentos: aplica un % a los productos seleccionados ──────────
+const BarraDescuentos = ({ seleccion, visibles, onSeleccionar, onAplicado, onCerrar }) => {
+    const [porcentaje, setPorcentaje] = useState("")
+    const [loading, setLoading] = useState(false)
+    const [mensaje, setMensaje] = useState("")
+
+    const todosVisiblesSeleccionados = visibles.length > 0 && visibles.every(p => seleccion.has(p.id))
+    const plural = seleccion.size === 1 ? "" : "s"
+
+    const aplicar = async (pct) => {
+        if (seleccion.size === 0) { setMensaje("Elegí al menos un producto"); return }
+        if (!Number.isInteger(pct) || pct < 0 || pct > 99) { setMensaje("Poné un % entero entre 1 y 99"); return }
+        setLoading(true); setMensaje("")
+        try {
+            await api.patch("/admin/products/discount", { ids: [...seleccion], percent: pct }, authHeaders())
+            setMensaje(pct === 0
+                ? `Descuento quitado de ${seleccion.size} producto${plural}`
+                : `${pct}% aplicado a ${seleccion.size} producto${plural}`)
+            onAplicado()
+        } catch (e) {
+            setMensaje(e.response?.data?.error || "Error al aplicar el descuento")
+        } finally { setLoading(false) }
+    }
+
+    return (
+        <div className="sticky top-0 z-20 bg-[#0A0A14] border border-[#C32CFF]/40 rounded-2xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="font-['koulen'] text-[16px] tracking-wider">
+                    {seleccion.size} SELECCIONADO{plural.toUpperCase()}
+                </span>
+                <div className="flex gap-2">
+                    <Btn small color="ghost" onClick={() => onSeleccionar(todosVisiblesSeleccionados ? [] : visibles.map(p => p.id))}>
+                        {todosVisiblesSeleccionados ? "NINGUNO" : "TODOS"}
+                    </Btn>
+                    <Btn small color="ghost" onClick={onCerrar}>LISTO</Btn>
+                </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                    <input type="number" min="1" max="99" placeholder="15" value={porcentaje}
+                        onChange={e => setPorcentaje(e.target.value)}
+                        className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[38px] w-[90px] pl-4 pr-7 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/60" />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 font-['koulen'] text-white/40">%</span>
+                </div>
+                <Btn small onClick={() => aplicar(Number(porcentaje))} disabled={loading || !porcentaje}>APLICAR DESCUENTO</Btn>
+                <Btn small color="ghost" onClick={() => aplicar(0)} disabled={loading}>QUITAR DESCUENTO</Btn>
+            </div>
+            {mensaje && <p className="font-['koulen'] text-[13px] text-white/60">{mensaje}</p>}
+        </div>
+    )
+}
+
 const AdminProductos = () => {
     const [rubro, setRubro] = useState("bebidas")
     const [products, setProducts] = useState([])
@@ -369,6 +438,27 @@ const AdminProductos = () => {
     const [search, setSearch] = useState("")
     const [showNewProduct, setShowNewProduct] = useState(false)
     const [showNewCategory, setShowNewCategory] = useState(false)
+    const [modoDescuento, setModoDescuento] = useState(false)
+    const [seleccion, setSeleccion] = useState(() => new Set())
+
+    const toggleSeleccion = (id) => setSeleccion(prev => {
+        const nueva = new Set(prev)
+        if (nueva.has(id)) nueva.delete(id)
+        else nueva.add(id)
+        return nueva
+    })
+
+    // Marca o desmarca toda una categoría
+    const toggleCategoria = (prods) => setSeleccion(prev => {
+        const nueva = new Set(prev)
+        const todos = prods.every(p => nueva.has(p.id))
+        prods.forEach(p => todos ? nueva.delete(p.id) : nueva.add(p.id))
+        return nueva
+    })
+
+    const cerrarModoDescuento = () => { setModoDescuento(false); setSeleccion(new Set()) }
+
+    const cambiarRubro = (r) => { setRubro(r); setSeleccion(new Set()) }
 
     const fetchData = async () => {
         setLoading(true)
@@ -397,7 +487,10 @@ const AdminProductos = () => {
         <div className="p-6 flex flex-col gap-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <h1 className="font-['koulen'] text-[32px] tracking-widest">PRODUCTOS</h1>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                    <Btn small color="ghost" onClick={() => modoDescuento ? cerrarModoDescuento() : setModoDescuento(true)}>
+                        % DESCUENTOS
+                    </Btn>
                     <Btn small color="ghost" onClick={() => setShowNewCategory(true)}>+ CATEGORÍA</Btn>
                     <Btn small onClick={() => setShowNewProduct(true)}>+ PRODUCTO</Btn>
                 </div>
@@ -405,7 +498,7 @@ const AdminProductos = () => {
 
             <div className="flex gap-2">
                 {["bebidas", "vapes"].map(r => (
-                    <button key={r} onClick={() => setRubro(r)}
+                    <button key={r} onClick={() => cambiarRubro(r)}
                         className={`font-['koulen'] text-[16px] tracking-wider px-5 py-2 rounded-xl transition-colors
                         ${rubro === r ? "bg-[#C32CFF] text-white" : "bg-white/5 text-white/50 hover:bg-white/10"}`}>
                         {r.toUpperCase()}
@@ -416,6 +509,12 @@ const AdminProductos = () => {
             <input type="text" placeholder="BUSCAR PRODUCTO..." value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[44px] px-5 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full max-w-[400px]" />
+
+            {modoDescuento && (
+                <BarraDescuentos seleccion={seleccion} visibles={filtered}
+                    onSeleccionar={(ids) => setSeleccion(new Set(ids))}
+                    onAplicado={fetchData} onCerrar={cerrarModoDescuento} />
+            )}
 
             {loading ? (
                 <div className="flex items-center justify-center h-[463px]">
@@ -429,9 +528,15 @@ const AdminProductos = () => {
                                 <h2 className="font-['koulen'] text-[18px] text-[#C32CFF] tracking-wider">{cat.toUpperCase()}</h2>
                                 <div className="flex-1 border-b border-white/10" />
                                 <span className="font-['koulen'] text-[12px] text-white/30">{prods.length}</span>
+                                {modoDescuento && (
+                                    <Btn small color="ghost" onClick={() => toggleCategoria(prods)}>
+                                        {prods.every(p => seleccion.has(p.id)) ? "DESMARCAR" : "MARCAR TODA"}
+                                    </Btn>
+                                )}
                             </div>
                             {prods.map(p => (
-                                <ProductRow key={p.id} product={p} categories={categories} rubro={rubro} onRefresh={fetchData} />
+                                <ProductRow key={p.id} product={p} categories={categories} rubro={rubro} onRefresh={fetchData}
+                                    seleccionable={modoDescuento} seleccionado={seleccion.has(p.id)} onToggleSeleccion={toggleSeleccion} />
                             ))}
                         </div>
                     ))}

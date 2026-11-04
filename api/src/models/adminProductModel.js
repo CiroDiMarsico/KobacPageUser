@@ -1,13 +1,16 @@
 const pool = require('../db/connection')
+const { asegurarColumna, precioConDescuento } = require('./productDiscountModel')
 
 // ─── GET ALL ──────────────────────────────────────────────────────────────────
 const getAll = async (rubro) => {
+    await asegurarColumna()
     const [rows] = await pool.query(`
         SELECT
             p.id,
             p.name,
             p.image,
             p.sale_price,
+            p.discount_percent,
             c.id   AS categoryId,
             c.name AS category,
             v.id          AS variantId,
@@ -58,6 +61,8 @@ const getAll = async (rubro) => {
                 name: row.name,
                 image: row.image,
                 salePrice: Number(row.sale_price),
+                discountPercent: Number(row.discount_percent) || 0,
+                finalPrice: precioConDescuento(row.sale_price, row.discount_percent),
                 categoryId: row.categoryId,
                 category: row.category,
                 variants: []

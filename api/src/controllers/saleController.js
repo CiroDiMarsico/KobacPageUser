@@ -3,6 +3,7 @@ const saleModel = require('../models/saleModel')
 const discountModel = require('../models/discountModel')
 const pool = require('../db/connection')
 const { notificarVenta } = require('./pushController')
+const { asegurarColumna, SQL_PRECIO_FINAL } = require('../models/productDiscountModel')
 
 // Vapes: 25% off en cada unidad par (2da, 4ta...), contando todas las unidades de
 // vapes del carrito juntas en el orden en que vienen. Tiene que coincidir con
@@ -14,6 +15,7 @@ const PORCENTAJE_DESCUENTO_VAPES = 25
 const PORCENTAJE_DESCUENTO_EXTRAS_PROMO = 10
 
 const create = async (req, res) => {
+    await asegurarColumna()
     const conn = await pool.getConnection()
     try {
         await conn.beginTransaction()
@@ -61,7 +63,7 @@ const create = async (req, res) => {
                     const quantity = Number(extra.cantidad)
                     if (!(quantity > 0)) continue
                     const [[product]] = await conn.query(
-                        `SELECT p.sale_price, LOWER(c.name) = 'otros' AS is_otros
+                        `SELECT ${SQL_PRECIO_FINAL} AS sale_price, LOWER(c.name) = 'otros' AS is_otros
                  FROM products p
                  JOIN variants v ON v.product_id = p.id
                  LEFT JOIN categories c ON c.id = p.category_id
@@ -86,7 +88,7 @@ const create = async (req, res) => {
                 for (const [variantId, quantity] of Object.entries(item.variants || {})) {
                     if (quantity > 0) {
                         const [[product]] = await conn.query(
-                            `SELECT p.sale_price,
+                            `SELECT ${SQL_PRECIO_FINAL} AS sale_price,
                             (LOWER(c.name) = 'vapes' OR LOWER(root.name) = 'vapes') AS is_vape
                      FROM products p
                      JOIN variants v ON v.product_id = p.id

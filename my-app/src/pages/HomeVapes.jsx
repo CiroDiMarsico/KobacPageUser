@@ -9,13 +9,14 @@ import { useNavigate } from "react-router-dom";
 import grafittiKobac from "/assets/grafittiKobac.webp";
 import lupaIcon from "/assets/lupa.webp";
 import api from '../api/axios'
-import { useCarrito } from "../hooks/useCarrito"
+import { useCarrito, actualizarPreciosCarrito } from "../hooks/useCarrito"
 
 const HomeVapes = () => {
   const navigate = useNavigate()
 
   // ─── Datos ────────────────────────────────────────────────────────────────
   const [data, setData] = useState([])
+  const [carrito, setCarrito] = useCarrito("carrito_vapes")
   const [carousel, setCarousel] = useState([])
   const [marquee, setMarquee] = useState([])
 
@@ -37,6 +38,9 @@ const HomeVapes = () => {
     ])
       .then(([resProductos, resConfig]) => {
         setData(resProductos.data)
+        // El carrito guardado puede tener precios viejos (ej: un descuento que
+        // empezó o terminó): se actualizan con los de ahora.
+        setCarrito(prev => actualizarPreciosCarrito(prev, resProductos.data))
         setCarousel(resConfig.data.carousel)
         setMarquee(resConfig.data.marquee)
       })
@@ -58,7 +62,6 @@ const HomeVapes = () => {
   );
 
   // ─── Carrito ──────────────────────────────────────────────────────────────
-  const [carrito, setCarrito] = useCarrito("carrito_vapes")
 
   const agregarAlCarrito = (product, quantities) => {
     setCarrito(prev => {
