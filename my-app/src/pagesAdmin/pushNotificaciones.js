@@ -71,5 +71,3 @@ export const desactivarNotificaciones = async () => {
   }).catch(() => {})
   await sub.unsubscribe().catch(() => {})
 }
-
-export const enviarPrueba = () => api.post("/admin/push/test")

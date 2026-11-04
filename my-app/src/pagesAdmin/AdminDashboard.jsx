@@ -116,8 +116,8 @@ const AdminDashboard = () => {
         </div>
 
         <div className="w-full flex flex-col items-center gap-4">
-          <AdminNotificaciones />
           <div className="flex items-center gap-4">
+          <AdminNotificaciones />
           <AdminCalculadora />
           <span className="font-['koulen'] text-[14px] text-white/40 tracking-wider">{username.toUpperCase()}</span>
           <button onClick={handleLogout}

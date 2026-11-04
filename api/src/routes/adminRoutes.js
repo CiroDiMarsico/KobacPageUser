@@ -95,6 +95,5 @@ router.delete('/discounts/:id',  discountAdminCtrl.remove)
 router.get('/push/public-key',   pushCtrl.getPublicKey)
 router.post('/push/subscribe',   pushCtrl.subscribe)
 router.post('/push/unsubscribe', pushCtrl.unsubscribe)
-router.post('/push/test',        pushCtrl.test)
 
 module.exports = router

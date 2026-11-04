@@ -130,19 +130,4 @@ const unsubscribe = async (req, res) => {
     }
 }
 
-const test = async (req, res) => {
-    try {
-        const r = await enviarATodos({
-            title: '🛒 Nueva venta 🍾 $12.345',
-            body: 'Notificación de prueba\n• 2x Producto de ejemplo\nPago: Efectivo',
-            tag: 'venta-prueba',
-            url: '/admin/dashboard',
-        })
-        res.json({ ok: true, ...r })
-    } catch (e) {
-        console.error(e)
-        res.status(500).json({ error: 'Error al enviar la prueba' })
-    }
-}
-
-module.exports = { notificarVenta, getPublicKey, subscribe, unsubscribe, test }
+module.exports = { notificarVenta, getPublicKey, subscribe, unsubscribe }
