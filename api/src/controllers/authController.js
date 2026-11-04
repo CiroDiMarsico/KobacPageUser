@@ -1,6 +1,17 @@
 const adminModel = require('../models/adminModel')
 const jwt = require('jsonwebtoken')
 
+// Sesion deslizante: el token dura 30 dias y /me entrega uno nuevo cada vez
+// que se abre el panel, asi el admin instalado en el celular no pide login
+// mientras se use al menos una vez por mes.
+const DURACION_SESION = '30d'
+
+const firmarToken = (admin) => jwt.sign(
+    { id: admin.id, username: admin.username },
+    process.env.JWT_SECRET,
+    { expiresIn: DURACION_SESION }
+)
+
 const login = async (req, res) => {
     try {
         const { username, password } = req.body
@@ -19,11 +30,7 @@ const login = async (req, res) => {
             return res.status(401).json({ error: 'Credenciales inválidas' })
         }
 
-        const token = jwt.sign(
-            { id: admin.id, username: admin.username },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' }
-        )
+        const token = firmarToken(admin)
 
         res.json({ token, username: admin.username })
     } catch (error) {
@@ -32,9 +39,10 @@ const login = async (req, res) => {
     }
 }
 
-// Verifica que el token sigue siendo válido (para el front al cargar)
+// Verifica que el token sigue siendo válido (para el front al cargar) y lo renueva
 const me = async (req, res) => {
-    res.json({ id: req.admin.id, username: req.admin.username })
+    const { id, username } = req.admin
+    res.json({ id, username, token: firmarToken({ id, username }) })
 }
 
 module.exports = { login, me }
