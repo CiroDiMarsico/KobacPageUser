@@ -88,8 +88,9 @@ const Product = ({
       <div className="w-[170px] max-[370px]:w-[150px] bg-[#1E1E1E] min-h-[300px] rounded-3xl flex flex-col items-center justify-between p-3 font-['prompt'] relative overflow-hidden" onClick={abrirPopover}>
       {/* Banda roja: el descuento tiene prioridad sobre "últimas unidades" */}
       {totalStock > 0 && product.discountPercent > 0 ? (
-        <div className="text-[16px] text-white leading-none font-bold flex items-center justify-center bg-red-500/90 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg] z-10">
-          <p>¡{product.discountPercent}% OFF!</p>
+        <div className="text-[14px] text-white leading-none font-bold flex items-center justify-center bg-red-500/90 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg] z-10">
+          <p>¡{product.discountPercent}% 
+            OFF!</p>
         </div>
       ) : totalStock > 0 && totalStock <= 2 && (
         <div className="text-[14px] text-white leading-none font-bold flex flex-col items-center justify-center bg-red-500/70 px-2 w-[180px] h-[34px] absolute right-[-57px] top-[10px] rotate-[35deg]">
