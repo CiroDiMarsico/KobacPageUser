@@ -13,8 +13,9 @@ const fmtDateTime = (d) => d ? `${fmtDate(d)} ${fmtTime(d)}` : "—"
 const todayISO = () => new Date().toISOString().split("T")[0]
 
 const STATUS_LABELS = {
-    pending: { label: "PENDIENTE", color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20" },
-    paid: { label: "PAGADO", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20" },
+    pending: { label: "PENDIENTE", color: "text-gray-300", bg: "bg-gray-300/10 border-gray-300/25" },
+    // "paid" en la base, se muestra como CONFIRMADO
+    paid: { label: "CONFIRMADO", color: "text-[#FFC83D]", bg: "bg-[#FFC83D]/10 border-[#FFC83D]/25" },
     shipping: { label: "EN CAMINO", color: "text-[#C32CFF]", bg: "bg-[#C32CFF]/10 border-[#C32CFF]/20" },
     delivered: { label: "ENTREGADO", color: "text-green-400", bg: "bg-green-400/10 border-green-400/20" },
     cancelled: { label: "CANCELADO", color: "text-red-400", bg: "bg-red-400/10 border-red-400/20" },
@@ -31,6 +32,7 @@ const Btn = ({ onClick, children, color = "purple", small = false, disabled = fa
     const colors = {
         purple: "bg-[#C32CFF] hover:bg-[#d444ff] text-white",
         green: "bg-green-600 hover:bg-green-500 text-white",
+        gold: "bg-[#FFC83D] hover:bg-[#FFD666] text-[#11111F]",
         ghost: "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10",
         red: "bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30",
     }
@@ -757,7 +759,7 @@ const SaleCard = ({ sale, onRefresh }) => {
                     <Btn small color="ghost" onClick={() => setShowTicket(true)}>🖨️ TICKET</Btn>
                     {nextStatuses.map(s => (
                         <Btn key={s} small
-                            color={s === "cancelled" ? "red" : s === "delivered" ? "green" : "purple"}
+                            color={s === "cancelled" ? "red" : s === "delivered" ? "green" : s === "paid" ? "gold" : "purple"}
                             onClick={() => handleStatus(s)}
                             disabled={loadingStatus === s}>
                             {loadingStatus === s ? "..." : STATUS_LABELS[s].label}

@@ -15,8 +15,8 @@ const diasDesde = (d) => {
 }
 
 const STATUS_LABEL = {
-    pending: { label: "PENDIENTE", color: "text-yellow-400" },
-    paid: { label: "PAGADO", color: "text-blue-400" },
+    pending: { label: "PENDIENTE", color: "text-gray-300" },
+    paid: { label: "CONFIRMADO", color: "text-[#FFC83D]" },
     shipping: { label: "EN CAMINO", color: "text-purple-400" },
     delivered: { label: "ENTREGADO", color: "text-green-400" },
     cancelled: { label: "CANCELADO", color: "text-red-400" },

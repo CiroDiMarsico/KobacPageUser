@@ -8,7 +8,7 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString("es-AR", {
 
 const STATUS_LABELS = {
     pending:   "PENDIENTE",
-    paid:      "PAGADO",
+    paid:      "CONFIRMADO",
     shipping:  "EN CAMINO",
     delivered: "ENTREGADO",
     cancelled: "CANCELADO",
