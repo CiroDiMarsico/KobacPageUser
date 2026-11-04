@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Navigate } from "react-router-dom"
 import api from "../api/axios"
 import grafittiKobac from "/assets/grafittiKobac.webp";
 
@@ -10,9 +10,6 @@ const AdminLogin = () => {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  if (localStorage.getItem("adminToken")) {
-    navigate("/admin/dashboard")
-  }
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -29,6 +26,12 @@ const AdminLogin = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Si ya hay sesión (ej: al abrir la app instalada en el celular, que arranca
+  // en /admin), ir directo al panel. ProtectedRoute valida el token.
+  if (localStorage.getItem("adminToken")) {
+    return <Navigate to="/admin/dashboard" replace />
   }
 
   return (
