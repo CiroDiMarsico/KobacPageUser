@@ -242,10 +242,27 @@ const updateShipping = async (id, shippingPrice) => {
 }
 
 // ─── UPDATE SALE (precio items + pagos) ──────────────────────────────────────
-const updateSale = async (id, { itemPrices, payments, total }) => {
+// scheduledTime: undefined = no tocar, null/"" = quitar reserva, "HH:MM" = reservar
+const updateSale = async (id, { itemPrices, payments, total, scheduledTime }) => {
+    await reservaModel.asegurarColumna()
     const conn = await pool.getConnection()
     try {
         await conn.beginTransaction()
+
+        if (scheduledTime !== undefined) {
+            let scheduledFor = null
+            if (scheduledTime) {
+                const [[venta]] = await conn.query(`SELECT created_at FROM sales WHERE id = ?`, [id])
+                const fecha = venta && reservaModel.resolverHorarioAdmin(scheduledTime, venta.created_at)
+                if (!fecha) {
+                    const err = new Error('Horario de reserva invalido')
+                    err.code = 'SCHEDULE_INVALID'
+                    throw err
+                }
+                scheduledFor = reservaModel.aSQL(fecha)
+            }
+            await conn.query(`UPDATE sales SET scheduled_for = ? WHERE id = ?`, [scheduledFor, id])
+        }
 
         // actualizar precio de cada item
         if (itemPrices) {

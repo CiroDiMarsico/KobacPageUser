@@ -325,6 +325,10 @@ ${descuentoVapesActual.total > 0 ? `🔥 *2da unidad ${PORCENTAJE_DESCUENTO_VAPE
             </div>
           </div>
           <span className="text-[18px] text-center font-['koulen'] text-white/70">(PRECIO DE ENVIO A ACORDAR)</span>
+          {/* En vapes no se usan cupones: ya tienen el 25% off en la 2da unidad */}
+          {rubro !== 'vapes' && (
+            <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100 bg-[#6F3784] w-[300px] rounded-xl h-[30px] flex items-center justify-center mx-auto mt-4 cursor-pointer">¿Tienes un cupon de descuento?</a>
+          )}
           {descuentoVapes.total > 0 && (
             <div className="flex flex-col items-center gap-1 mt-2 font-['koulen'] text-[#C32CFF]">
               <span className="text-[20px]">🔥 2DA UNIDAD {PORCENTAJE_DESCUENTO_VAPES}% OFF: -${descuentoVapes.total.toLocaleString("es-AR")}</span>
@@ -350,41 +354,38 @@ ${descuentoVapesActual.total > 0 ? `🔥 *2da unidad ${PORCENTAJE_DESCUENTO_VAPE
 
         <hr className="w-[90%] mx-auto mt-6" />
 
-        <div className="flex flex-col justify-center items-center mt-6 px-10 gap-6">
-          <div className="flex justify-center items-center gap-4">
-            <span className="font-['prompt'] text-3xl font-bold text-center">COMO ABONAS?</span>
+        {/* Mismas dos columnas en "como abonas" y "cuando lo queres", así los botones quedan alineados */}
+        <div className="grid grid-cols-[minmax(0,1fr)_200px] items-center gap-4 w-full max-w-[540px] mx-auto mt-6 px-6">
+            <span className="font-['prompt'] text-3xl font-bold text-right">COMO ABONAS?</span>
             <div className="flex flex-col items-end gap-2">
               <Button text="TRANSFERENCIA" width="200px" height="50px" click={() => { setShow("transferencia") }} color={show == "transferencia" ? "#C32CFF" : "#1E1E1E"} textColor={show == "transferencia" ? "#ffffff" : "#C32CFF"} />
               <Button text="EFECTIVO" width="200px" height="50px" click={() => { setShow("efectivo") }} color={show == "efectivo" ? "#C32CFF" : "#1E1E1E"} textColor={show == "efectivo" ? "#ffffff" : "#C32CFF"} />
               <Button text="AMBOS" width="200px" height="50px" click={() => { setShow("ambos") }} color={show == "ambos" ? "#C32CFF" : "#1E1E1E"} textColor={show == "ambos" ? "#ffffff" : "#C32CFF"} />
             </div>
-          </div>
-          {/* Reserva: solo viernes y sábados mientras queden horarios esta noche */}
-          {horarios.length > 0 && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex justify-center items-center gap-4">
-                <span className="font-['prompt'] text-3xl font-bold text-center">CUANDO LO QUERES?</span>
-                <div className="flex flex-col items-end gap-2">
-                  <Button text="AHORA" width="200px" height="50px" click={() => setCuando("ahora")} color={cuando === "ahora" ? "#C32CFF" : "#1E1E1E"} textColor={cuando === "ahora" ? "#ffffff" : "#C32CFF"} />
-                  <Button text="RESERVAR" width="200px" height="50px" click={elegirReservar} color={cuando === "reservar" ? "#C32CFF" : "#1E1E1E"} textColor={cuando === "reservar" ? "#ffffff" : "#C32CFF"} />
-                </div>
+        </div>
+
+        {/* Reserva: solo viernes y sábados mientras queden horarios esta noche */}
+        {horarios.length > 0 && (
+          <>
+            <hr className="w-[90%] mx-auto mt-6" />
+            <div className="grid grid-cols-[minmax(0,1fr)_200px] items-center gap-4 w-full max-w-[540px] mx-auto mt-6 px-6">
+              <span className="font-['prompt'] text-3xl font-bold text-right">CUANDO LO QUERES?</span>
+              <div className="flex flex-col items-end gap-2">
+                <Button text="AHORA" width="200px" height="50px" click={() => setCuando("ahora")} color={cuando === "ahora" ? "#C32CFF" : "#1E1E1E"} textColor={cuando === "ahora" ? "#ffffff" : "#C32CFF"} />
+                <Button text="RESERVAR" width="200px" height="50px" click={elegirReservar} color={cuando === "reservar" ? "#C32CFF" : "#1E1E1E"} textColor={cuando === "reservar" ? "#ffffff" : "#C32CFF"} />
               </div>
               {cuando === "reservar" && (
-                <label className="flex items-center gap-3 font-['koulen'] text-[22px]">
-                  <span>🕐 PARA LAS</span>
+                <>
+                  <span className="font-['prompt'] text-xl font-bold text-right">🕐 PARA LAS</span>
                   <select value={hora} onChange={e => setHora(e.target.value)}
-                    className="bg-[#1E1E1E] text-[#C32CFF] border border-[#C32CFF]/50 rounded-xl h-[44px] px-4 font-['koulen'] text-[22px] outline-none">
+                    className="bg-[#1E1E1E] text-[#C32CFF] rounded-3xl w-[200px] h-[50px] px-4 font-['prompt'] font-bold text-[20px] text-center outline-none cursor-pointer">
                     {horarios.map(h => <option key={h} value={h}>{h} HS</option>)}
                   </select>
-                </label>
+                </>
               )}
             </div>
-          )}
-          {/* En vapes no se usan cupones: ya tienen el 25% off en la 2da unidad */}
-          {rubro !== 'vapes' && (
-            <a onClick={() => { setClose(false) }} className="text-[18px] text-center font-['koulen'] text-white/100 bg-[#6F3784] w-[300px] rounded-xl h-[30px] flex items-center justify-center">¿Tienes un cupon de descuento?</a>
-          )}
-        </div>
+          </>
+        )}
 
         <hr className="w-[90%] mx-auto mt-6" />
       </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import api from "../api/axios"
 import TicketVenta from "./TicketVenta"
 import Loading from "../components/Loading"
+import { TODOS_LOS_HORARIOS, aHHMM } from "../utils/reserva"
 
 const token = () => localStorage.getItem("adminToken")
 const authHeaders = () => ({ headers: { Authorization: `Bearer ${token()}` } })
@@ -59,6 +60,16 @@ const Input = ({ label, value, onChange, type = "text", placeholder = "", min })
         <input type={type} value={value} onChange={e => onChange(e.target.value)}
             placeholder={placeholder} min={min}
             className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[42px] px-4 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full" />
+    </div>
+)
+
+const Select = ({ label, value, onChange, options }) => (
+    <div className="flex flex-col gap-1">
+        {label && <label className="font-['koulen'] text-[12px] text-white/40 tracking-wider">{label}</label>}
+        <select value={value} onChange={e => onChange(e.target.value)}
+            className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[42px] px-4 font-['koulen'] text-[16px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full">
+            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
     </div>
 )
 
@@ -268,6 +279,7 @@ const EditSaleModal = ({ sale, onClose, onSaved }) => {
             ? sale.payments.map(p => ({ method: p.method, amount: String(p.amount) }))
             : [{ method: "cash", amount: "" }]
     )
+    const [reserva, setReserva] = useState(aHHMM(sale.scheduledFor))
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
 
@@ -282,7 +294,8 @@ const EditSaleModal = ({ sale, onClose, onSaved }) => {
         try {
             await api.put(`/admin/sales/${sale.id}`, {
                 payments: payments.map(p => ({ method: p.method, amount: Number(p.amount) })),
-                total: Number(total)
+                total: Number(total),
+                scheduledTime: reserva || null
             }, authHeaders())
             onSaved()
         } catch (e) {
@@ -301,6 +314,13 @@ const EditSaleModal = ({ sale, onClose, onSaved }) => {
                 )}
             </div>
             <PaymentsEditor payments={payments} onChange={setPayments} />
+            <Select label="🕐 HORARIO RESERVADO" value={reserva} onChange={setReserva}
+                options={[
+                    { value: "", label: "SIN RESERVA (AHORA)" },
+                    // Si la reserva guardada no está en la lista (dato viejo), se muestra igual
+                    ...(reserva && !TODOS_LOS_HORARIOS.includes(reserva) ? [{ value: reserva, label: `${reserva} HS` }] : []),
+                    ...TODOS_LOS_HORARIOS.map(h => ({ value: h, label: `${h} HS` })),
+                ]} />
             {Math.abs(diff) > 0.5 && (
                 <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2">
                     <span className="font-['koulen'] text-[13px] text-white/50">DIFERENCIA PAGO / TOTAL</span>

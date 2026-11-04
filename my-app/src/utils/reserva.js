@@ -17,6 +17,22 @@ const nocheDe = (ahora) => {
   return d
 }
 
+// Todos los horarios de una noche: 22:00, 22:15 ... 02:00 (para el admin)
+export const TODOS_LOS_HORARIOS = Array.from(
+  { length: (CIERRE - APERTURA) / INTERVALO + 1 },
+  (_, i) => {
+    const min = (APERTURA + i * INTERVALO) % (24 * 60)
+    return `${dosDigitos(Math.floor(min / 60))}:${dosDigitos(min % 60)}`
+  }
+)
+
+// "HH:MM" de una fecha (o "" si no hay)
+export const aHHMM = (fecha) => {
+  if (!fecha) return ""
+  const d = new Date(fecha)
+  return `${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}`
+}
+
 // Horarios que todavía se pueden elegir esta noche, cada 15 minutos.
 // Vacío si hoy no se trabaja (la opción de reservar no se muestra).
 export const horariosDisponibles = (ahora = new Date()) => {

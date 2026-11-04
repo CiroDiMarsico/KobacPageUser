@@ -36,26 +36,33 @@ const nocheDe = (ahora) => {
     return d
 }
 
-// Convierte "HH:MM" a la fecha de esta noche. Devuelve null si no es un horario
-// válido: fuera de viernes/sábado, fuera de 22:00-02:00, no múltiplo de 15 o ya pasado.
-const resolverHorario = (hhmm, ahora = new Date()) => {
+// "HH:MM" dentro de 22:00-02:00 (cada 15 min) → fecha en la noche de `referencia`.
+// null si el horario no es válido.
+const horarioEnNoche = (hhmm, referencia) => {
     const m = /^(\d{2}):(\d{2})$/.exec(String(hhmm ?? ''))
     if (!m) return null
     const horas = Number(m[1]), minutos = Number(m[2])
     if (horas > 23 || minutos > 59 || minutos % INTERVALO !== 0) return null
 
-    const noche = nocheDe(ahora)
-    if (!DIAS_ABIERTOS.includes(noche.getDay())) return null
-
     // 00:00-02:00 cuenta como después de medianoche de esa misma noche
     const minutosNoche = horas < 12 ? (horas + 24) * 60 + minutos : horas * 60 + minutos
     if (minutosNoche < APERTURA || minutosNoche > CIERRE) return null
 
-    const fecha = new Date(noche)
+    const fecha = nocheDe(referencia)
     fecha.setMinutes(minutosNoche)
-    if (fecha.getTime() < ahora.getTime() - TOLERANCIA_MS) return null
     return fecha
 }
+
+// Reserva hecha por el cliente: además tiene que ser viernes/sábado y no haber pasado.
+const resolverHorario = (hhmm, ahora = new Date()) => {
+    if (!DIAS_ABIERTOS.includes(nocheDe(ahora).getDay())) return null
+    const fecha = horarioEnNoche(hhmm, ahora)
+    if (!fecha || fecha.getTime() < ahora.getTime() - TOLERANCIA_MS) return null
+    return fecha
+}
+
+// Reserva editada desde el admin: cualquier horario de la noche en que se hizo la venta.
+const resolverHorarioAdmin = (hhmm, creadaEl) => horarioEnNoche(hhmm, new Date(creadaEl))
 
 // "YYYY-MM-DD HH:MM:00" en hora local (el proceso corre con TZ de Argentina)
 const aSQL = (fecha) => {
@@ -63,4 +70,4 @@ const aSQL = (fecha) => {
     return `${fecha.getFullYear()}-${p(fecha.getMonth() + 1)}-${p(fecha.getDate())} ${p(fecha.getHours())}:${p(fecha.getMinutes())}:00`
 }
 
-module.exports = { asegurarColumna, resolverHorario, aSQL }
+module.exports = { asegurarColumna, resolverHorario, resolverHorarioAdmin, aSQL }

@@ -50,10 +50,12 @@ const updateShipping = async (req, res) => {
 const updateSale = async (req, res) => {
     try {
         const { id } = req.params
-        const { itemPrices, payments, total } = req.body
-        await adminSalesModel.updateSale(id, { itemPrices, payments, total })
+        const { itemPrices, payments, total, scheduledTime } = req.body
+        await adminSalesModel.updateSale(id, { itemPrices, payments, total, scheduledTime })
         res.json({ ok: true })
     } catch (e) {
+        if (e.code === 'SCHEDULE_INVALID')
+            return res.status(400).json({ error: 'El horario tiene que ser entre 22:00 y 02:00, cada 15 minutos' })
         console.error(e)
         res.status(500).json({ error: 'Error al editar venta' })
     }
