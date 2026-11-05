@@ -21,6 +21,26 @@ const buildWeekCode = (date = new Date()) => {
     return `${isoYear}-W${week}`
 }
 
+// ─── desde dónde se entregó ───────────────────────────────────────────────────
+// sales.delivered_via: 'delivery' (app del cadete) o 'admin'. Solo lo entregado
+// desde la app de delivery suma al contador del cadete. La columna se crea sola.
+let columnaViaLista = null
+const asegurarColumnaVia = () => {
+    if (!columnaViaLista) {
+        columnaViaLista = (async () => {
+            const [[existe]] = await pool.query(`
+                SELECT 1 AS ok FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sales' AND COLUMN_NAME = 'delivered_via'
+            `)
+            if (!existe) {
+                await pool.query(`ALTER TABLE sales ADD COLUMN delivered_via VARCHAR(16) NULL`)
+                    .catch(e => { if (e.code !== 'ER_DUP_FIELDNAME') throw e })
+            }
+        })().catch(e => { columnaViaLista = null; throw e })
+    }
+    return columnaViaLista
+}
+
 // ─── armar ventas desde rows ──────────────────────────────────────────────────
 const buildSales = (rows) => {
     const map = {}
@@ -163,22 +183,32 @@ const getForDelivery = async () => {
     return sales
 }
 
-// Resumen de la semana para el cadete: pedidos entregados y suma de envíos,
-// de lunes 00:00 a hoy, con el detalle por día.
+// Resumen de la semana para el cadete: pedidos entregados DESDE LA APP DE
+// DELIVERY y suma de sus envíos (lo que se entrega desde el admin no suma).
+// Cuenta por la hora de ENTREGA (arrived_at), que se guarda siempre al marcar
+// entregado, haya pasado o no por "en camino", y sin importar cuándo se creó
+// el pedido. Lo entregado antes de las 06:00 cuenta para la noche anterior
+// (un sábado a la 01:00 es "sábado"). Semana: de lunes a domingo.
+const HORAS_CORTE_NOCHE = 6
+
 const getDeliveryWeekSummary = async () => {
+    await asegurarColumnaVia()
     const lunes = new Date()
+    lunes.setHours(lunes.getHours() - HORAS_CORTE_NOCHE)
     lunes.setHours(0, 0, 0, 0)
     lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7))
+    const desde = new Date(lunes)
+    desde.setHours(HORAS_CORTE_NOCHE)
 
     const [dias] = await pool.query(`
-        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS dia,
+        SELECT DATE_FORMAT(DATE_SUB(arrived_at, INTERVAL ${HORAS_CORTE_NOCHE} HOUR), '%Y-%m-%d') AS dia,
                COUNT(*) AS pedidos,
                COALESCE(SUM(shipping_price), 0) AS envios
         FROM sales
-        WHERE status = 'delivered' AND created_at >= ?
+        WHERE status = 'delivered' AND delivered_via = 'delivery' AND arrived_at >= ?
         GROUP BY dia
         ORDER BY dia
-    `, [lunes])
+    `, [desde])
 
     const porDia = dias.map(d => ({ dia: d.dia, pedidos: Number(d.pedidos), envios: Number(d.envios) }))
     return {
@@ -219,7 +249,9 @@ const getHistory = async (rubro, weeks, date) => {
 }
 
 // ─── UPDATE STATUS ────────────────────────────────────────────────────────────
-const updateStatus = async (id, status, cancelReason = null) => {
+// via: 'admin' o 'delivery', quién lo marca (solo importa al entregar)
+const updateStatus = async (id, status, cancelReason = null, via = 'admin') => {
+    await asegurarColumnaVia()
     const conn = await pool.getConnection()
     try {
         await conn.beginTransaction()
@@ -229,11 +261,12 @@ const updateStatus = async (id, status, cancelReason = null) => {
 
         if (status === 'pending') {
             // Volver a pendiente: la salida y llegada se registran de nuevo
-            extraFields = ', departure_at = NULL, arrived_at = NULL'
+            extraFields = ', departure_at = NULL, arrived_at = NULL, delivered_via = NULL'
         } else if (status === 'shipping') {
             extraFields = ', departure_at = CASE WHEN departure_at IS NULL THEN NOW() ELSE departure_at END'
         } else if (status === 'delivered') {
-            extraFields = ', arrived_at = CASE WHEN arrived_at IS NULL THEN NOW() ELSE arrived_at END'
+            extraFields = ', arrived_at = CASE WHEN arrived_at IS NULL THEN NOW() ELSE arrived_at END, delivered_via = ?'
+            params.push(via)
         } else if (status === 'cancelled') {
             extraFields = ', cancel_reason = ?'
             params.push(cancelReason)
@@ -286,9 +319,10 @@ const updateStatus = async (id, status, cancelReason = null) => {
 // de salida y llegada para que se registren de nuevo. Devuelve el estado nuevo,
 // o null si la venta no estaba entregada.
 const reopen = async (id) => {
+    await asegurarColumnaVia()
     const [result] = await pool.query(`
         UPDATE sales
-        SET status = 'pending', departure_at = NULL, arrived_at = NULL
+        SET status = 'pending', departure_at = NULL, arrived_at = NULL, delivered_via = NULL
         WHERE id = ? AND status = 'delivered'
     `, [id])
     if (result.affectedRows === 0) return null

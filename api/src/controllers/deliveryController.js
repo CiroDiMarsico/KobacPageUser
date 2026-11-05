@@ -92,7 +92,7 @@ const updateStatus = async (req, res) => {
         if (!PASOS[status].includes(venta.status))
             return res.status(409).json({ error: 'El pedido ya no está disponible para delivery' })
 
-        await adminSalesModel.updateStatus(id, status)
+        await adminSalesModel.updateStatus(id, status, null, 'delivery')
         res.json({ ok: true })
     } catch (e) {
         console.error(e)
