@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react"
 import api from "../api/axios"
 import Loading from "../components/Loading"
+import AdminNotificaciones from "../pagesAdmin/AdminNotificaciones"
+import { pushDelivery } from "../pagesAdmin/pushNotificaciones"
 
 // Panel del cadete: pedidos confirmados y en camino, con los botones
 // EN CAMINO y ENTREGADO. Al marcar ENTREGADO se abre WhatsApp con el
@@ -309,6 +311,7 @@ const Delivery = () => {
     const [resumen, setResumen] = useState(null)
 
     const salir = useCallback(() => {
+        pushDelivery.desactivarNotificaciones().catch(() => {})
         localStorage.removeItem(TOKEN_KEY)
         setLogueado(false)
         setPedidos(null)
@@ -330,6 +333,18 @@ const Delivery = () => {
             setError("No se pudieron cargar los pedidos")
         }
     }, [salir])
+
+    // Sesión deslizante: al abrir la app se renueva el token (30 días más).
+    // Solo se cierra si el servidor lo rechaza, no por un corte de red.
+    useEffect(() => {
+        if (!logueado) return
+        api.get("/delivery/me", authHeaders())
+            .then(res => { if (res.data?.token) localStorage.setItem(TOKEN_KEY, res.data.token) })
+            .catch(err => {
+                const estado = err.response?.status
+                if (estado === 401 || estado === 403) salir()
+            })
+    }, [logueado, salir])
 
     useEffect(() => {
         if (!logueado) return
@@ -353,7 +368,8 @@ const Delivery = () => {
         <main className="bg-[#11111F] min-h-dvh text-white font-['prompt']">
             <header className="sticky top-0 z-10 bg-[#11111F]/95 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between">
                 <h1 className="font-['koulen'] text-[26px] tracking-widest leading-none">KOBAC <span className="text-[#C32CFF]">DELIVERY</span></h1>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    <AdminNotificaciones push={pushDelivery} nombreApp="KOBAC Delivery" que="pedidos" />
                     <button onClick={cargar} className="font-['koulen'] text-[14px] px-3 py-2 rounded-xl bg-white/10">↻</button>
                     <button onClick={salir} className="font-['koulen'] text-[14px] px-3 py-2 rounded-xl bg-white/5 text-white/50">SALIR</button>
                 </div>

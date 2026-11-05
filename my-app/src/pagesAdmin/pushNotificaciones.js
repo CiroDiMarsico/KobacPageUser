@@ -1,10 +1,9 @@
 import api from "../api/axios"
 
-// Notificaciones push de ventas nuevas para el admin instalado en el celular.
+// Notificaciones push para las apps instaladas en el celular:
+//   - admin: ventas nuevas
+//   - delivery: pedidos confirmados para el cadete
 // En iPhone solo funcionan con la app agregada a la pantalla de inicio (iOS 16.4+).
-
-const SW_URL = "/admin-sw.js"
-const SW_SCOPE = "/admin"
 
 export const pushSoportado = () =>
   "serviceWorker" in navigator && "PushManager" in window && "Notification" in window
@@ -16,8 +15,6 @@ export const esIOS = () =>
 export const esAppInstalada = () =>
   window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true
 
-const registrarSW = () => navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE })
-
 // La clave pública llega en base64url y PushManager la quiere en bytes.
 const claveABytes = (base64) => {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4)
@@ -25,49 +22,65 @@ const claveABytes = (base64) => {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0))
 }
 
-const guardarEnServidor = (sub) => api.post("/admin/push/subscribe", sub.toJSON())
+// swUrl / scope: service worker de esa app. apiBase: "/admin/push" o
+// "/delivery/push". tokenKey: dónde guarda su sesión.
+const crearPush = ({ swUrl, scope, apiBase, tokenKey }) => {
+  const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem(tokenKey)}` } })
+  const registrarSW = () => navigator.serviceWorker.register(swUrl, { scope })
+  const guardarEnServidor = (sub) => api.post(`${apiBase}/subscribe`, sub.toJSON(), auth())
 
-// Tiene que llamarse desde un toque del usuario (iOS lo exige para pedir permiso).
-export const activarNotificaciones = async () => {
-  const permiso = await Notification.requestPermission()
-  if (permiso !== "granted") return permiso
+  // Tiene que llamarse desde un toque del usuario (iOS lo exige para pedir permiso).
+  const activarNotificaciones = async () => {
+    const permiso = await Notification.requestPermission()
+    if (permiso !== "granted") return permiso
 
-  const reg = await registrarSW()
-  await navigator.serviceWorker.ready
-  const { data } = await api.get("/admin/push/public-key")
+    const reg = await registrarSW()
+    await navigator.serviceWorker.ready
+    const { data } = await api.get(`${apiBase}/public-key`, auth())
 
-  let sub = await reg.pushManager.getSubscription()
-  if (!sub) {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: claveABytes(data.publicKey),
-    })
+    let sub = await reg.pushManager.getSubscription()
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: claveABytes(data.publicKey),
+      })
+    }
+    await guardarEnServidor(sub)
+    return "granted"
   }
-  await guardarEnServidor(sub)
-  return "granted"
+
+  // Al abrir la app: si ya estaba activado, re-sincroniza la suscripción con el
+  // servidor (el navegador puede rotarla). Devuelve true si está activa.
+  const sincronizarNotificaciones = async () => {
+    if (!pushSoportado() || Notification.permission !== "granted") return false
+    const reg = await registrarSW()
+    const sub = await reg.pushManager.getSubscription()
+    if (!sub) return false
+    await guardarEnServidor(sub)
+    return true
+  }
+
+  // Al cerrar sesión: este celular deja de recibir notificaciones.
+  // Lee el token al empezar, porque el logout lo borra enseguida.
+  const desactivarNotificaciones = async () => {
+    if (!pushSoportado()) return
+    const headers = auth()
+    const reg = await navigator.serviceWorker.getRegistration(scope)
+    const sub = await reg?.pushManager.getSubscription()
+    if (!sub) return
+    await api.post(`${apiBase}/unsubscribe`, { endpoint: sub.endpoint }, headers).catch(() => {})
+    await sub.unsubscribe().catch(() => {})
+  }
+
+  return { activarNotificaciones, sincronizarNotificaciones, desactivarNotificaciones }
 }
 
-// Al abrir el panel: si ya estaba activado, re-sincroniza la suscripción con el
-// servidor (el navegador puede rotarla). Devuelve true si está activa.
-export const sincronizarNotificaciones = async () => {
-  if (!pushSoportado() || Notification.permission !== "granted") return false
-  const reg = await registrarSW()
-  const sub = await reg.pushManager.getSubscription()
-  if (!sub) return false
-  await guardarEnServidor(sub)
-  return true
-}
+export const pushAdmin = crearPush({
+  swUrl: "/admin-sw.js", scope: "/admin", apiBase: "/admin/push", tokenKey: "adminToken",
+})
 
-// Al cerrar sesión: este celular deja de recibir ventas.
-// Lee el token al empezar, porque el logout lo borra enseguida.
-export const desactivarNotificaciones = async () => {
-  if (!pushSoportado()) return
-  const token = localStorage.getItem("adminToken")
-  const reg = await navigator.serviceWorker.getRegistration(SW_SCOPE)
-  const sub = await reg?.pushManager.getSubscription()
-  if (!sub) return
-  await api.post("/admin/push/unsubscribe", { endpoint: sub.endpoint }, {
-    headers: { Authorization: `Bearer ${token}` },
-  }).catch(() => {})
-  await sub.unsubscribe().catch(() => {})
-}
+export const pushDelivery = crearPush({
+  swUrl: "/delivery-sw.js", scope: "/delivery", apiBase: "/delivery/push", tokenKey: "deliveryToken",
+})
+
+export const { activarNotificaciones, sincronizarNotificaciones, desactivarNotificaciones } = pushAdmin

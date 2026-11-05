@@ -1,4 +1,6 @@
 const adminSalesModel = require('../models/adminSalesModel')
+const pool = require('../db/connection')
+const { notificarDelivery } = require('./pushController')
 
 const getInProcess = async (req, res) => {
     try {
@@ -26,8 +28,11 @@ const updateStatus = async (req, res) => {
         const { status, cancelReason } = req.body
         const valid = ['pending', 'paid', 'shipping', 'delivered', 'cancelled']
         if (!valid.includes(status)) return res.status(400).json({ error: 'Estado inválido' })
+        const [[antes]] = await pool.query(`SELECT status FROM sales WHERE id = ?`, [id])
         await adminSalesModel.updateStatus(id, status, cancelReason)
         res.json({ ok: true })
+        // Pedido recién confirmado: avisar al cadete (no frena la respuesta)
+        if (status === 'paid' && antes?.status === 'pending') notificarDelivery(id)
     } catch (e) {
         console.error(e)
         res.status(500).json({ error: 'Error al actualizar estado' })

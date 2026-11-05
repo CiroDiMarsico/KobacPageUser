@@ -28,6 +28,16 @@ const asegurarTablas = () => {
                     private_key VARCHAR(255) NOT NULL
                 )
             `)
+            // A quién le llegan: 'admin' (ventas nuevas) o 'delivery' (pedidos
+            // confirmados para el cadete). Las suscripciones viejas son del admin.
+            const [[existe]] = await pool.query(`
+                SELECT 1 AS ok FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'push_subscriptions' AND COLUMN_NAME = 'audience'
+            `)
+            if (!existe) {
+                await pool.query(`ALTER TABLE push_subscriptions ADD COLUMN audience VARCHAR(16) NOT NULL DEFAULT 'admin'`)
+                    .catch(e => { if (e.code !== 'ER_DUP_FIELDNAME') throw e })
+            }
         })().catch(e => { tablasListas = null; throw e })
     }
     return tablasListas
@@ -50,14 +60,14 @@ const saveVapid = async ({ publicKey, privateKey }) => {
     return getVapid()
 }
 
-const upsertSubscription = async ({ adminId, endpoint, p256dh, auth, userAgent }) => {
+const upsertSubscription = async ({ adminId, endpoint, p256dh, auth, userAgent, audience = 'admin' }) => {
     await asegurarTablas()
     await pool.query(`
-        INSERT INTO push_subscriptions (admin_id, endpoint, p256dh, auth, user_agent, created_at)
-        VALUES (?, ?, ?, ?, ?, NOW())
+        INSERT INTO push_subscriptions (admin_id, endpoint, p256dh, auth, user_agent, audience, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
         ON DUPLICATE KEY UPDATE admin_id = VALUES(admin_id), p256dh = VALUES(p256dh),
-            auth = VALUES(auth), user_agent = VALUES(user_agent)
-    `, [adminId, endpoint, p256dh, auth, userAgent])
+            auth = VALUES(auth), user_agent = VALUES(user_agent), audience = VALUES(audience)
+    `, [adminId, endpoint, p256dh, auth, userAgent, audience])
 }
 
 const deleteSubscription = async (endpoint) => {
@@ -65,16 +75,18 @@ const deleteSubscription = async (endpoint) => {
     await pool.query(`DELETE FROM push_subscriptions WHERE endpoint = ?`, [endpoint])
 }
 
-const getSubscriptions = async () => {
+const getSubscriptions = async (audience = 'admin') => {
     await asegurarTablas()
-    const [rows] = await pool.query(`SELECT endpoint, p256dh, auth FROM push_subscriptions`)
+    const [rows] = await pool.query(
+        `SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE audience = ?`, [audience]
+    )
     return rows
 }
 
 // Resumen de una venta para armar la notificacion.
 const getSaleSummary = async (saleId) => {
     const [[sale]] = await pool.query(`
-        SELECT s.id, s.rubro, s.total, s.location, s.scheduled_for, c.name AS client_name,
+        SELECT s.id, s.rubro, s.total, s.shipping_price, s.location, s.scheduled_for, c.name AS client_name,
                (SELECT GROUP_CONCAT(DISTINCT sp.method) FROM sale_payments sp WHERE sp.sale_id = s.id) AS methods
         FROM sales s
         LEFT JOIN clients c ON c.id = s.client_id

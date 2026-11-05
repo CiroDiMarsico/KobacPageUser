@@ -17,9 +17,9 @@ const asegurarVapid = () => {
 }
 
 // ─── Envio ────────────────────────────────────────────────────────────────────
-const enviarATodos = async (payload) => {
+const enviarATodos = async (payload, audience = 'admin') => {
     await asegurarVapid()
-    const subs = await pushModel.getSubscriptions()
+    const subs = await pushModel.getSubscriptions(audience)
     const body = JSON.stringify(payload)
 
     const resultados = await Promise.allSettled(subs.map(s =>
@@ -45,7 +45,7 @@ const enviarATodos = async (payload) => {
 const PAGOS = { cash: 'Efectivo', transfer: 'Transferencia' }
 const plata = (n) => '$' + Math.round(Number(n) || 0).toLocaleString('es-AR')
 
-const armarNotificacionVenta = (venta) => {
+const lineasProductos = (venta) => {
     const lineas = []
     const promosVistas = new Set()
     for (const it of venta.items) {
@@ -58,10 +58,19 @@ const armarNotificacionVenta = (venta) => {
             lineas.push(`• ${it.quantity}x ${it.product_name}${variante}`)
         }
     }
+    return lineas
+}
+
+const textoReserva = (venta) => {
+    const hora = venta.scheduled_for ? new Date(venta.scheduled_for) : null
+    return hora && `🕐 RESERVADO para las ${String(hora.getHours()).padStart(2, '0')}:${String(hora.getMinutes()).padStart(2, '0')}`
+}
+
+const armarNotificacionVenta = (venta) => {
+    const lineas = lineasProductos(venta)
 
     const pago = (venta.methods || '').split(',').filter(Boolean).map(m => PAGOS[m] ?? m).join(' + ')
-    const hora = venta.scheduled_for ? new Date(venta.scheduled_for) : null
-    const reserva = hora && `🕐 RESERVADO para las ${String(hora.getHours()).padStart(2, '0')}:${String(hora.getMinutes()).padStart(2, '0')}`
+    const reserva = textoReserva(venta)
     const body = [
         reserva,
         venta.client_name,
@@ -90,6 +99,37 @@ const notificarVenta = async (saleId) => {
     }
 }
 
+// Para el cadete: pedido confirmado, sin costos ni ganancias.
+const armarNotificacionDelivery = (venta) => {
+    const pago = (venta.methods || '').split(',').filter(Boolean).map(m => PAGOS[m] ?? m).join(' + ')
+    const total = Number(venta.total) + Number(venta.shipping_price || 0)
+    const body = [
+        textoReserva(venta),
+        venta.location ? `📍 ${venta.location}` : '📍 Sin dirección',
+        venta.client_name,
+        ...lineasProductos(venta),
+        `Cobrar: ${plata(total)}${pago ? ` (${pago})` : ''}`,
+    ].filter(Boolean).join('\n')
+
+    return {
+        title: `🛵 Pedido confirmado #${venta.id}`,
+        body,
+        tag: `delivery-${venta.id}`,
+        url: '/delivery',
+    }
+}
+
+// Se llama cuando el admin confirma un pedido. Nunca tira error.
+const notificarDelivery = async (saleId) => {
+    try {
+        const venta = await pushModel.getSaleSummary(saleId)
+        if (!venta) return
+        await enviarATodos(armarNotificacionDelivery(venta), 'delivery')
+    } catch (e) {
+        console.error('Push: no se pudo notificar al delivery', saleId, e)
+    }
+}
+
 // ─── Endpoints (admin) ────────────────────────────────────────────────────────
 const getPublicKey = async (req, res) => {
     try {
@@ -100,17 +140,19 @@ const getPublicKey = async (req, res) => {
     }
 }
 
-const subscribe = async (req, res) => {
+// audience: 'admin' desde /api/admin, 'delivery' desde /api/delivery
+const crearSubscribe = (audience) => async (req, res) => {
     try {
         const { endpoint, keys } = req.body || {}
         if (!endpoint || !keys?.p256dh || !keys?.auth)
             return res.status(400).json({ error: 'Suscripción inválida' })
         await pushModel.upsertSubscription({
-            adminId: req.admin.id,
+            adminId: audience === 'admin' ? req.admin.id : null,
             endpoint,
             p256dh: keys.p256dh,
             auth: keys.auth,
             userAgent: (req.headers['user-agent'] || '').slice(0, 255),
+            audience,
         })
         res.json({ ok: true })
     } catch (e) {
@@ -118,6 +160,9 @@ const subscribe = async (req, res) => {
         res.status(500).json({ error: 'Error al guardar la suscripción' })
     }
 }
+
+const subscribe = crearSubscribe('admin')
+const subscribeDelivery = crearSubscribe('delivery')
 
 const unsubscribe = async (req, res) => {
     try {
@@ -130,4 +175,4 @@ const unsubscribe = async (req, res) => {
     }
 }
 
-module.exports = { notificarVenta, getPublicKey, subscribe, unsubscribe }
+module.exports = { notificarVenta, notificarDelivery, getPublicKey, subscribe, subscribeDelivery, unsubscribe }

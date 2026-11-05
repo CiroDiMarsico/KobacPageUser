@@ -8,6 +8,7 @@ const adminSalesModel = require('../models/adminSalesModel')
 // marcarlos "en camino" o "entregado".
 
 const DURACION_SESION = '30d'
+const firmarToken = () => jwt.sign({ role: 'delivery' }, process.env.JWT_SECRET, { expiresIn: DURACION_SESION })
 
 const mismaClave = (a, b) => {
     const ha = crypto.createHash('sha256').update(String(a)).digest()
@@ -23,9 +24,12 @@ const login = async (req, res) => {
     if (!password || !mismaClave(password, clave))
         return res.status(401).json({ error: 'Contraseña incorrecta' })
 
-    const token = jwt.sign({ role: 'delivery' }, process.env.JWT_SECRET, { expiresIn: DURACION_SESION })
-    res.json({ token })
+    res.json({ token: firmarToken() })
 }
+
+// Sesión deslizante, como el admin: cada vez que se abre la app se entrega un
+// token nuevo de 30 días, así el cadete no vuelve a loguearse mientras la use.
+const me = (req, res) => res.json({ token: firmarToken() })
 
 // Solo lo que necesita el cadete (sin costos ni ganancias)
 const paraCadete = (s) => ({
@@ -96,4 +100,4 @@ const updateStatus = async (req, res) => {
     }
 }
 
-module.exports = { login, getOrders, getWeekSummary, updateStatus }
+module.exports = { me, login, getOrders, getWeekSummary, updateStatus }

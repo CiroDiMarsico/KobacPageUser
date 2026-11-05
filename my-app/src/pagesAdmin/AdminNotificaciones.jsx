@@ -1,24 +1,24 @@
 import { useEffect, useState } from "react"
-import {
-  pushSoportado, esIOS, esAppInstalada,
-  activarNotificaciones, sincronizarNotificaciones,
-} from "./pushNotificaciones"
+import { pushSoportado, esIOS, esAppInstalada, pushAdmin } from "./pushNotificaciones"
 
-// Campanita al lado de la calculadora: activa las notificaciones de ventas en
-// este dispositivo. Contorno verde = activas, violeta = no.
+// Campanita: activa las notificaciones en este dispositivo. Contorno verde =
+// activas, violeta = no. Por defecto es la del admin (ventas nuevas); el panel
+// del cadete la usa con push={pushDelivery}.
 const estadoInicial = () => {
   if (!pushSoportado()) return esIOS() && !esAppInstalada() ? "instalar" : "no-soportado"
   if (Notification.permission === "denied") return "bloqueado"
   return "inactivo"
 }
 
-const AYUDA = {
-  instalar: "Para recibir notificaciones de ventas, abrí esta página en Safari → Compartir → Agregar a pantalla de inicio, y activalas desde la app.",
-  bloqueado: "Las notificaciones están bloqueadas. Habilitalas en Ajustes → Notificaciones → KOBAC Admin.",
+const textosAyuda = (nombreApp, que) => ({
+  instalar: `Para recibir notificaciones de ${que}, abrí esta página en Safari → Compartir → Agregar a pantalla de inicio, y activalas desde la app.`,
+  bloqueado: `Las notificaciones están bloqueadas. Habilitalas en Ajustes → Notificaciones → ${nombreApp}.`,
   "no-soportado": "Este navegador no soporta notificaciones.",
-}
+})
 
-const AdminNotificaciones = () => {
+const AdminNotificaciones = ({ push = pushAdmin, nombreApp = "KOBAC Admin", que = "ventas" }) => {
+  const { activarNotificaciones, sincronizarNotificaciones } = push
+  const AYUDA = textosAyuda(nombreApp, que)
   const [estado, setEstado] = useState(estadoInicial)
   const [cargando, setCargando] = useState(false)
 
@@ -26,7 +26,7 @@ const AdminNotificaciones = () => {
     sincronizarNotificaciones()
       .then((activo) => { if (activo) setEstado("activo") })
       .catch(() => {})
-  }, [])
+  }, [sincronizarNotificaciones])
 
   const activa = estado === "activo"
 
@@ -49,7 +49,7 @@ const AdminNotificaciones = () => {
   return (
     <button
       onClick={onClick}
-      title={activa ? "Notificaciones de ventas activas" : "Activar notificaciones de ventas"}
+      title={activa ? `Notificaciones de ${que} activas` : `Activar notificaciones de ${que}`}
       className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all
         ${activa
           ? "border-green-400 text-green-400"
