@@ -147,6 +147,48 @@ const getInProcess = async (rubro) => {
     return sales
 }
 
+// ─── PEDIDOS PARA EL CADETE ───────────────────────────────────────────────────
+// Confirmados y en camino de todos los rubros, primero los más urgentes
+// (reservados por su hora, el resto por cuándo se pidieron).
+const getForDelivery = async () => {
+    await reservaModel.asegurarColumna()
+    const [rows] = await pool.query(
+        BASE_QUERY + `
+        WHERE s.status IN ('paid', 'shipping')
+        ORDER BY COALESCE(s.scheduled_for, s.created_at) ASC, s.id, si.id
+        `
+    )
+    const sales = buildSales(rows)
+    await attachPayments(sales)
+    return sales
+}
+
+// Resumen de la semana para el cadete: pedidos entregados y suma de envíos,
+// de lunes 00:00 a hoy, con el detalle por día.
+const getDeliveryWeekSummary = async () => {
+    const lunes = new Date()
+    lunes.setHours(0, 0, 0, 0)
+    lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7))
+
+    const [dias] = await pool.query(`
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS dia,
+               COUNT(*) AS pedidos,
+               COALESCE(SUM(shipping_price), 0) AS envios
+        FROM sales
+        WHERE status = 'delivered' AND created_at >= ?
+        GROUP BY dia
+        ORDER BY dia
+    `, [lunes])
+
+    const porDia = dias.map(d => ({ dia: d.dia, pedidos: Number(d.pedidos), envios: Number(d.envios) }))
+    return {
+        desde: lunes,
+        pedidos: porDia.reduce((a, d) => a + d.pedidos, 0),
+        envios: porDia.reduce((a, d) => a + d.envios, 0),
+        porDia,
+    }
+}
+
 // ─── GET HISTORY ──────────────────────────────────────────────────────────────
 // solo ventas entregadas o canceladas, filtrando canceladas del conteo de ganancias
 const getHistory = async (rubro, weeks, date) => {
@@ -583,4 +625,4 @@ const descontarFIFO = async (conn, variantId, quantity, saleItemId) => {
     await conn.query(`UPDATE variants SET stock = stock - ? WHERE id = ?`, [quantity, variantId])
 }
 
-module.exports = { getInProcess, getHistory, updateStatus, updateShipping, updateSale, createManual, reopen, editItems }
+module.exports = { getDeliveryWeekSummary, getForDelivery, getInProcess, getHistory, updateStatus, updateShipping, updateSale, createManual, reopen, editItems }

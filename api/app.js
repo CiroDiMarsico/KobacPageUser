@@ -42,6 +42,9 @@ app.use('/api/auth', authRoutes)
 const adminRoutes = require('./src/routes/adminRoutes')
 app.use('/api/admin', adminRoutes)
 
+const deliveryRoutes = require('./src/routes/deliveryRoutes')
+app.use('/api/delivery', deliveryRoutes)
+
 const uploadRoutes = require('./src/routes/uploadRoutes')
 app.use('/api/admin', uploadRoutes)
 

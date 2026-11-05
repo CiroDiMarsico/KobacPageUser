@@ -16,6 +16,9 @@ import AdminLogin from "./pagesAdmin/AdminLogin"
 import AdminDashboard from "./pagesAdmin/AdminDashboard"
 import ProtectedRoute from "./pagesAdmin/ProtectedRoute"
 import useAdminPwa from "./pagesAdmin/useAdminPwa"
+
+// Página del cadete
+import Delivery from "./pagesDelivery/Delivery"
 function App() {
   useAdminPwa()
   return (
@@ -37,6 +40,8 @@ function App() {
             <AdminDashboard />
           </ProtectedRoute>
         } />
+
+        <Route path="/delivery" element={<Delivery />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
