@@ -138,6 +138,7 @@ const create = async (req, res) => {
         // Validar código de descuento — se calcula SOLO sobre subtotalProductos
         let discountCodeId = null
         let discountAmount = 0
+        let isUnlimited = false
 
         if (discount?.code) {
             const [[validDiscount]] = await conn.query(`
@@ -157,6 +158,7 @@ const create = async (req, res) => {
             }
 
             discountCodeId = validDiscount.id
+            isUnlimited = !!validDiscount.is_unlimited
             if (validDiscount.discount_type === 'percentage') {
                 discountAmount = Math.round((subtotalProductos * Number(validDiscount.discount_value)) / 100)
             } else {
@@ -186,7 +188,8 @@ const create = async (req, res) => {
         await saleModel.createItems(conn, items)
         await saleModel.createPayments(conn, saleId, adjustedPayments)
 
-        if (discount?.code && discountCodeId) {
+        // Los códigos ilimitados no se desactivan al usarse
+        if (discount?.code && discountCodeId && !isUnlimited) {
             await discountModel.deactivate(conn, discount.code)
         }
 

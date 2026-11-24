@@ -1,7 +1,9 @@
 const pool = require('../db/connection')
+const { asegurarColumna } = require('../models/discountModel')
 
 const getAll = async (req, res) => {
     try {
+        await asegurarColumna()
         const [rows] = await pool.query(
             `SELECT * FROM discount_codes ORDER BY created_at DESC`
         )
@@ -11,11 +13,12 @@ const getAll = async (req, res) => {
 
 const create = async (req, res) => {
     try {
-        const { code, discountType, discountValue, expiresAt } = req.body
+        const { code, discountType, discountValue, expiresAt, unlimited } = req.body
+        await asegurarColumna()
         await pool.query(
-            `INSERT INTO discount_codes (code, discount_type, discount_value, expires_at)
-             VALUES (?, ?, ?, ?)`,
-            [code, discountType, discountValue, expiresAt || null]
+            `INSERT INTO discount_codes (code, discount_type, discount_value, expires_at, is_unlimited)
+             VALUES (?, ?, ?, ?, ?)`,
+            [code, discountType, discountValue, expiresAt || null, !!unlimited]
         )
         res.status(201).json({ ok: true })
     } catch (e) {

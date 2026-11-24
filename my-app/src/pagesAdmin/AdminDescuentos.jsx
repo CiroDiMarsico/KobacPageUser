@@ -68,6 +68,7 @@ const NuevoCodigoModal = ({ onClose, onSaved }) => {
     const [discountType,  setDiscountType]  = useState("percentage")
     const [discountValue, setDiscountValue] = useState("")
     const [expiresAt,     setExpiresAt]     = useState("")
+    const [unlimited,     setUnlimited]     = useState(false)
     const [loading,       setLoading]       = useState(false)
     const [error,         setError]         = useState("")
 
@@ -88,6 +89,7 @@ const NuevoCodigoModal = ({ onClose, onSaved }) => {
                 discountType,
                 discountValue: Number(discountValue),
                 expiresAt:     expiresAt || null,
+                unlimited,
             }, authHeaders())
             onSaved()
         } catch (e) {
@@ -158,6 +160,20 @@ const NuevoCodigoModal = ({ onClose, onSaved }) => {
                     className="bg-[#1E1E2E] border border-white/10 rounded-xl h-[42px] px-4 font-['koulen'] text-[14px] text-white outline-none focus:border-[#C32CFF]/60 transition-colors w-full" />
             </div>
 
+            {/* Uso ilimitado */}
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                    <span className="font-['koulen'] text-[14px] text-white tracking-wider">USO ILIMITADO</span>
+                    <span className="font-['koulen'] text-[11px] text-white/30">
+                        {unlimited ? "No se desactiva al usarse" : "Se desactiva despues del primer uso"}
+                    </span>
+                </div>
+                <button type="button" onClick={() => setUnlimited(u => !u)}
+                    className={`w-11 h-6 rounded-full transition-colors shrink-0 ${unlimited ? "bg-[#C32CFF]" : "bg-white/20"}`}>
+                    <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-0.5 ${unlimited ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+            </div>
+
             {error && <p className="font-['koulen'] text-[13px] text-red-400">{error}</p>}
             <div className="flex gap-3 justify-end">
                 <Btn color="ghost" onClick={onClose}>CANCELAR</Btn>
@@ -191,6 +207,11 @@ const CodigoRow = ({ discount, onToggle, onDelete }) => {
                         :                   "bg-white/10 text-white/30"}`}>
                         {isExpired ? "EXPIRADO" : isActive ? "ACTIVO" : "INACTIVO"}
                     </span>
+                    {!!discount.is_unlimited && (
+                        <span className="font-['koulen'] text-[11px] px-2 py-0.5 rounded-full bg-[#C32CFF]/20 text-[#C32CFF]">
+                            ∞ ILIMITADO
+                        </span>
+                    )}
                 </div>
 
                 {/* Valor */}
